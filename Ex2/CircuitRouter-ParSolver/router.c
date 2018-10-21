@@ -58,6 +58,7 @@
 #include "lib/queue.h"
 #include "router.h"
 #include "lib/vector.h"
+#include <pthread.h>
 
 
 typedef enum momentum {
@@ -84,6 +85,8 @@ point_t MOVE_POSZ = { 0,  0,  1,  0, MOMENTUM_POSZ};
 point_t MOVE_NEGX = {-1,  0,  0,  0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1,  0,  0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0,  0, -1,  0, MOMENTUM_NEGZ};
+
+int i=0;
 
 
 /* =============================================================================
@@ -293,30 +296,34 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * =============================================================================
  */
 void router_solve (void* argPtr){
-	
-	router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
-    	router_t* routerPtr = routerArgPtr->routerPtr;
-    	maze_t* mazePtr = routerArgPtr->mazePtr;
-    	vector_t* myPathVectorPtr = vector_alloc(1);
-    	assert(myPathVectorPtr);
+    
+    router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;	
+    pthread_mutex_lock(routerArgPtr->router_lock);
 
-    	queue_t* workQueuePtr = mazePtr->workQueuePtr;
-	grid_t* gridPtr = mazePtr->gridPtr;
-    	long bendCost = routerPtr->bendCost;
-    	grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
-    	assert(myGridPtr);
-    	queue_t* myExpansionQueuePtr = queue_alloc(-1);
+    router_t* routerPtr = routerArgPtr->routerPtr;
+    maze_t* mazePtr = routerArgPtr->mazePtr;
+    vector_t* myPathVectorPtr = vector_alloc(1);
+    assert(myPathVectorPtr);
+
+    queue_t* workQueuePtr = mazePtr->workQueuePtr;
+    grid_t* gridPtr = mazePtr->gridPtr;
+    long bendCost = routerPtr->bendCost;
+    grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
+    assert(myGridPtr);
+    queue_t* myExpansionQueuePtr = queue_alloc(-1);
 
     /*
      * Iterate over work list to route each path. This involves an
      * 'expansion' and 'traceback' phase for each source/destination pair.
      */
+
     while (1) {
 
         pair_t* coordinatePairPtr;
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
-        } else {
+        } 
+        else {
             coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
         }
         if (coordinatePairPtr == NULL) {
@@ -357,6 +364,8 @@ void router_solve (void* argPtr){
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);
+
+    pthread_mutex_unlock((routerArgPtr->router_lock));
 }
 
 

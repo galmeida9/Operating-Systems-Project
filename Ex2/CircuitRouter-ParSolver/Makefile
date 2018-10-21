@@ -31,7 +31,7 @@ $(OBJS):
 clean:
 	@echo Cleaning...
 	rm -f $(OBJS) $(TARGET) $(TARGET2)
-	rm inputs/*.res inputs/*.old
+	rm -f inputs/*.res inputs/*.old
 
 solver:
 	./CircuitRouter-ParSolver -t 1 inputs/random-x32-y32-z3-n64.txt

@@ -181,18 +181,25 @@ int main(int argc, char **argv) {
     list_t* pathVectorListPtr = list_alloc(NULL);
     assert(pathVectorListPtr);
 
-    router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
+    pthread_mutex_t router_lock;
+    pthread_mutex_init(&router_lock, NULL);
+
+    router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, &router_lock};
     TIMER_T startTime;
     TIMER_READ(startTime);
 	
 	for (i = 0; i < n_threads; i++) {
-		if (pthread_create (&threads[i], 0, (void *)(*router_solve), (void *)&routerArg) == 0);
+		if (pthread_create (&threads[i], 0, (void *)(*router_solve), (void *)&routerArg) == 0)
+			printf("Tarefa\n");
 		else 
-			exit(-1);
+			/*exit(-1);*/
+			printf("Erro\n");
 	}
 
 	for (i = 0; i < n_threads; i++)
 		pthread_join(threads[i], NULL);
+
+	pthread_mutex_destroy(&router_lock);
 
 	TIMER_T stopTime;
     TIMER_READ(stopTime);
