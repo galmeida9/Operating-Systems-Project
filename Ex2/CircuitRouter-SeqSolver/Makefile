@@ -3,13 +3,13 @@
 
 SOURCES = router.c maze.c grid.c coordinate.c CircuitRouter-SeqSolver.c
 SOURCES+= ../lib/vector.c ../lib/queue.c ../lib/list.c ../lib/pair.c
-SOURCE2 = CircuitRouter-SimpleShell.c
+SOURCE2 = CircuitRouter-ParSolver.c
 OBJS = $(SOURCES:%.c=%.o)
 CC   = gcc
 CFLAGS =-g -Wall -std=gnu99 -I../
 LDFLAGS=-lm
 TARGET = CircuitRouter-SeqSolver
-TARGET2 = CircuitRouter-SimpleShell
+TARGET2 = CircuitRouter-ParSolver
 
 all: $(TARGET)
 
@@ -36,5 +36,5 @@ clean:
 	rm -f $(OBJS) $(TARGET) $(TARGET2)
 
 shell:
-	./CircuitRouter-SimpleShell
+	./CircuitRouter-ParSolver -t 1
 
