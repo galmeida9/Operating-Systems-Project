@@ -1,9 +1,15 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lib/list.h"
+#include "maze.h"
+#include "router.h"
+#include "lib/timer.h"
+#include "lib/types.h"
 #include <unistd.h>
 #include <pthread.h>
-#include "router.h"
+
 
 enum param_types {
     PARAM_BENDCOST = (unsigned char)'b',
@@ -22,6 +28,7 @@ enum param_defaults {
 /*bool_t global_doPrint = TRUE;*/
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
+int n_threads=1;
 
 
 /* =============================================================================
@@ -36,6 +43,7 @@ static void displayUsage (const char* appName){
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
+    printf("    t <UINT>   [t] nu of threads    (%i)\n", n_threads);
     printf("    h          [h]elp message       (false)\n");
     exit(1);
 }
@@ -62,23 +70,30 @@ static int parseArgs (long argc, char* const argv[]){
     long opt;
     int file_i=-1;
 
-    opterr = 0;
+    opterr = 1;
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "hb:px:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:px:y:z:t:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
             case 'y':
             case 'z':
+            	printf("teste\n");
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
+            case 't':
+            	n_threads = atoi(optarg);
+            	opterr--;
+            	break;
             case 'p':
                 /*global_doPrint = TRUE;*/
                 break;
             case '?':
             case 'h':
+            	displayUsage(argv[0]);
+            	break;
             default:
                 opterr++;
                 break;
@@ -100,8 +115,16 @@ static int parseArgs (long argc, char* const argv[]){
         	opterr++;
         }
     }
+
+    if (opterr) {
+    	displayUsage(argv[0]);
+    	return -1;
+    }
+
     if (file_i != -1) return file_i;
 
+    return -1;
+}
 
 /* =============================================================================
  * getOutputFile
@@ -130,45 +153,87 @@ FILE* getOutputFile(char* old_path){
  */
 
 int main(int argc, char **argv) {
-	char *path;
-	int i, nthreads, file_i;
+/*
+* Initialization
+*/
+	int i, file_i;
 	pthread_t *threads;
 	FILE *file_input=NULL, *file_output=NULL;
 
 	file_i = parseArgs(argc, (char** const)argv);
+	if (file_i < 0) exit(1);
 
-	if ((argc == 4) && (strcmp(argv[2], "-t") == 0)) {
-		nthreads = atoi(argv[3]);
-		threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
-		path = strdup(argv[1]);
-	}
-	else exit(-1);
-	
 	file_input = fopen(argv[file_i], "r");
-	maze_t* mazePtr = maze_alloc();
-    	assert(mazePtr);
+	file_output = getOutputFile(argv[file_i]);
 
-    	long numPathToRoute = maze_read(mazePtr, file_input, file_output);
-    	router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
+
+	threads = (pthread_t *) malloc(sizeof(pthread_t) * n_threads);
+	
+	maze_t* mazePtr = maze_alloc();
+    assert(mazePtr);
+
+    long numPathToRoute = maze_read(mazePtr, file_input, file_output);
+    router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
                                        global_params[PARAM_BENDCOST]);
-    	assert(routerPtr);
-    	list_t* pathVectorListPtr = list_alloc(NULL);
-    	assert(pathVectorListPtr);
+    assert(routerPtr);
+    list_t* pathVectorListPtr = list_alloc(NULL);
+    assert(pathVectorListPtr);
 
-    	router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
-    	TIMER_T startTime;
-    	TIMER_READ(startTime);
-
+    router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
+    TIMER_T startTime;
+    TIMER_READ(startTime);
 	
-	for (i = 0; i < nthreads; i++) {
-		if (pthread_create (&threads[i], 0, router_solve, (void *)&routerArg) == 0);
+	for (i = 0; i < n_threads; i++) {
+		if (pthread_create (&threads[i], 0, (void *)(*router_solve), (void *)&routerArg) == 0);
 		else 
 			exit(-1);
 	}
 
-	for (i = 0; i < nthreads; i++)
+	for (i = 0; i < n_threads; i++)
 		pthread_join(threads[i], NULL);
-	return 0;
+
+	TIMER_T stopTime;
+    TIMER_READ(stopTime);
+
+    long numPathRouted = 0;
+    list_iter_t it;
+    list_iter_reset(&it, pathVectorListPtr);
+    while (list_iter_hasNext(&it, pathVectorListPtr)) {
+        vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
+        numPathRouted += vector_getSize(pathVectorPtr);
+	}
+ 	
+	fprintf(file_output, "Paths routed    = %li\n", numPathRouted);
+    fprintf(file_output, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+
+    /*
+     * Check solution and clean up
+     */
+    assert(numPathRouted <= numPathToRoute);
+
+    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, file_output); /*OUTPUT*/
+
+    assert(status == TRUE);
+    fprintf(file_output,"Verification passed.");
+
+    maze_free(mazePtr);
+    router_free(routerPtr);
+
+    list_iter_reset(&it, pathVectorListPtr);
+    while (list_iter_hasNext(&it, pathVectorListPtr)) {
+        vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
+        vector_t* v;
+        while((v = vector_popBack(pathVectorPtr))) {
+            // v stores pointers to longs stored elsewhere; no need to free them here
+            vector_free(v);
+        }
+        vector_free(pathVectorPtr);
+    }
+    list_free(pathVectorListPtr);
+
+    fclose(file_input);
+    fclose(file_output);
+    exit(0);
 }

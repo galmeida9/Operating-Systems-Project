@@ -1,24 +1,21 @@
 # Makefile, versao 1
 # Sistemas Operativos, DEI/IST/ULisboa 2018-19
 
-SOURCES = router.c maze.c grid.c coordinate.c CircuitRouter-SeqSolver.c
+SOURCES = router.c maze.c grid.c coordinate.c CircuitRouter-ParSolver.c
 SOURCES+= ../lib/vector.c ../lib/queue.c ../lib/list.c ../lib/pair.c
-SOURCE2 = CircuitRouter-ParSolver.c
 OBJS = $(SOURCES:%.c=%.o)
 CC   = gcc
-CFLAGS =-g -Wall -std=gnu99 -I../
+CFLAGS =-g -Wall -pthread -std=gnu99 -I../
 LDFLAGS=-lm
-TARGET = CircuitRouter-SeqSolver
-TARGET2 = CircuitRouter-ParSolver
+TARGET = CircuitRouter-ParSolver
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $(TARGET) $(LDFLAGS) 
-	$(CC) $(CFLAGS) $(SOURCE2) -o $(TARGET2) $(LDFLAGS)
 
 
-CircuitRouter-SeqSolver.o: CircuitRouter-SeqSolver.c maze.h router.h ../lib/list.h ../lib/timer.h ../lib/types.h	
+CircuitRouter-ParSolver.o: CircuitRouter-ParSolver.c maze.h router.h ../lib/list.h ../lib/timer.h ../lib/types.h	
 router.o: router.c router.h coordinate.h grid.h ../lib/queue.h ../lib/vector.h
 maze.o: maze.c maze.h coordinate.h grid.h ../lib/list.h ../lib/queue.h ../lib/pair.h ../lib/types.h ../lib/vector.h
 grid.o: grid.c grid.h coordinate.h ../lib/types.h ../lib/vector.h
@@ -33,8 +30,9 @@ $(OBJS):
 
 clean:
 	@echo Cleaning...
-	rm -f $(OBJS) $(TARGET) $(TARGET2)
+	rm -f $(OBJS) $(TARGET) $(TARGET2
+	rm inputs/*.res inputs/*.old
 
-shell:
-	./CircuitRouter-ParSolver -t 1
+solver:
+	./CircuitRouter-ParSolver -t 1 inputs/random-x32-y32-z3-n64.txt
 
