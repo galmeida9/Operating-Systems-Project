@@ -30,7 +30,7 @@ $(OBJS):
 
 clean:
 	@echo Cleaning...
-	rm -f $(OBJS) $(TARGET) $(TARGET2
+	rm -f $(OBJS) $(TARGET) $(TARGET2)
 	rm inputs/*.res inputs/*.old
 
 solver:
