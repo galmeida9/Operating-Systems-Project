@@ -210,12 +210,12 @@ int main(int argc, char** argv){
     pthread_mutex_init(&add_lock, NULL);
     
     router_mutex_t mutexes = {&queue_lock, &traceback_lock, &add_lock};
-    router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, mutexes};
+ 	router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, mutexes};   
     TIMER_T startTime;
     TIMER_READ(startTime);
 
-    for (int i = 0; i < n_threads; i++) {
-        if (pthread_create(&threads[i], 0, (void *) router_solve, (void *) &routerArg) != 0){
+    for (int j = 0; j < n_threads; j++) {
+        if (pthread_create(&threads[j], 0, (void *) router_solve, (void *) &routerArg) != 0){
         	printf("Erro ao criar Threads\n");
         }
     }
