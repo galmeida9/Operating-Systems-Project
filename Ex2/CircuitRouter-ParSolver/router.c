@@ -85,6 +85,7 @@ point_t MOVE_NEGX = {-1,  0,  0,  0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1,  0,  0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0,  0, -1,  0, MOMENTUM_NEGZ};
 
+int i = 0;
 
 /* =============================================================================
  * router_alloc
@@ -292,7 +293,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * =============================================================================
  */
 void router_solve (void* argPtr){
-
+    printf("%d\n", ++i);
     router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
     router_mutex_t mutexes = routerArgPtr->mutexes;
     router_t* routerPtr = routerArgPtr->routerPtr;
@@ -307,8 +308,6 @@ void router_solve (void* argPtr){
     long bendCost = routerPtr->bendCost;
     queue_t* myExpansionQueuePtr = queue_alloc(-1);
 
-    int exp_t = 0;
-
     /*
      * Iterate over work list to route each path. This involves an
      * 'expansion' and 'traceback' phase for each source/destination pair.
@@ -317,13 +316,16 @@ void router_solve (void* argPtr){
 
         pair_t* coordinatePairPtr;
         pthread_mutex_lock(mutexes.queue_lock);
+        printf("NO MUTEX %d\n", i);
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
+            printf("já não tenho... %d\n", i); 
         } else {
             coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
         }
         pthread_mutex_unlock(mutexes.queue_lock);
         if (coordinatePairPtr == NULL) {
+
             break;
         }
 
@@ -335,13 +337,11 @@ void router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
 
-        grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
-        pthread_mutex_lock(mutexes.expansion_lock);
-        exp_t = doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr);
-        pthread_mutex_unlock(mutexes.expansion_lock);
-
         pthread_mutex_lock(mutexes.traceback_lock);
-        if (exp_t) {
+        printf("Hey, %d\n", i);
+        grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
+
+        if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
             pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
 
             if (pointVectorPtr) {
@@ -356,9 +356,7 @@ void router_solve (void* argPtr){
             bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
             assert(status);
         }
-
         pthread_mutex_unlock(mutexes.traceback_lock);
-
     }
 
     /*
@@ -371,6 +369,7 @@ void router_solve (void* argPtr){
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);
+    pthread_exit(NULL);
 }
 
 
