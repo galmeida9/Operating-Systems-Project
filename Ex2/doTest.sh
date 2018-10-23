@@ -4,14 +4,18 @@ path=$2
 
 echo '#threads, exec_time, speedup'
 
-start1=$(date +%s)
+start1=$(date +%s.%N)
 ./CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $path
-end1=$(date +%s)
-runtime=$(echo "$end1 - $start1" |bc)
-echo 1S, $runtime, 1
+end1=$(date +%s.%N)
+seqTime=$(echo "$end1 - $start1" | bc)
+echo 1S, $seqTime, 1
 
 for i in $(seq 1 $n_threads)
 do
+	start=$(date +%s.%N)
 	./CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $path
-	echo $i, 0, 0
+	end=$(date +%s.%N)
+	parTime=$(echo "$end1 - $start1" | bc)
+	speedup=$(echo "$seqTime/$parTime" | bc)
+	echo $i, $parTime, $speedup
 done
