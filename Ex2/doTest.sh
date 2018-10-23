@@ -12,10 +12,10 @@ echo 1S, $seqTime, 1
 
 for i in $(seq 1 $n_threads)
 do
-	start=$(date +%s.%N)
+	start2=$(date +%s.%N)
 	./CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $path
-	end=$(date +%s.%N)
-	parTime=$(echo "$end1 - $start1" | bc)
+	end2=$(date +%s.%N)
+	parTime=$(echo "$end2 - $start2" | bc)
 	speedup=$(echo "$seqTime/$parTime" | bc)
 	echo $i, $parTime, $speedup
 done
