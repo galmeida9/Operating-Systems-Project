@@ -16,6 +16,6 @@ do
 	./CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $path
 	end2=$(date +%s.%N)
 	parTime=$(echo "$end2 - $start2" | bc)
-	speedup=$(echo "$seqTime/$parTime" | bc)
-	echo $i, $parTime, $speedup
+	speedup=$(echo "scale=6; ${seqTime}/${parTime}" | bc)
+    echo $i, $parTime, ${speedup}
 done
