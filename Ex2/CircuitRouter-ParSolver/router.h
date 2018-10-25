@@ -68,7 +68,7 @@ typedef struct router {
 } router_t;
 
 typedef struct router_mutex {
-    pthread_mutex_t *queue_lock, *traceback_lock, *add_lock;
+    pthread_mutex_t *queue_lock, *grid_lock, *traceback_lock, *add_lock, *addPath_lock;
 } router_mutex_t;
 
 typedef struct router_solve_arg {

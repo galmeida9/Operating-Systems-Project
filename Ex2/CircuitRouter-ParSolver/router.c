@@ -306,12 +306,14 @@ void router_solve (void* argPtr){
     assert(myGridPtr);
     long bendCost = routerPtr->bendCost;
     queue_t* myExpansionQueuePtr = queue_alloc(-1);
+    int pathFound = 0;
 
     /*
      * Iterate over work list to route each path. This involves an
      * 'expansion' and 'traceback' phase for each source/destination pair.
      */
     while (1) {
+        pathFound = 0;
         pair_t* coordinatePairPtr;
         pthread_mutex_lock(mutexes.queue_lock);
         /*printf("ID on QUEUE LOCK: %ld\n", (long) pthread_self());*/
@@ -332,27 +334,34 @@ void router_solve (void* argPtr){
 
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
+ 
+        while(!pathFound){
+            pthread_mutex_lock(mutexes.grid_lock);
 
-        pthread_mutex_lock(mutexes.traceback_lock);
+            grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
+        
+            pthread_mutex_unlock(mutexes.grid_lock);
+            if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
+                pthread_mutex_lock(mutexes.traceback_lock);
+                pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
+                pthread_mutex_unlock(mutexes.traceback_lock);
 
-        grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
-
-        if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
-            pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
-
-            if (pointVectorPtr) {
-                grid_addPath_Ptr(gridPtr, pointVectorPtr);
-
-                success = TRUE;
+                if (pointVectorPtr) {
+                    pthread_mutex_lock(mutexes.addPath_lock);          
+                    if (grid_addPath_Ptr(gridPtr, pointVectorPtr)){ 
+                        success = TRUE;
+                        pathFound = 1;               
+                    }
+                    pthread_mutex_unlock(mutexes.addPath_lock);               
+                }
             }
+            else break;
         }
-
 
         if (success) {
             bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
             assert(status);
         }
-        pthread_mutex_unlock(mutexes.traceback_lock);
     }
 
     /*
