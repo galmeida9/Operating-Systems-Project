@@ -336,15 +336,15 @@ void router_solve (void* argPtr){
         vector_t* pointVectorPtr = NULL;
  
         while(!pathFound){
-            pthread_mutex_lock(mutexes.grid_lock);
+            /*pthread_mutex_lock(mutexes.grid_lock);*/
 
             grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
         
-            pthread_mutex_unlock(mutexes.grid_lock);
+            /*pthread_mutex_unlock(mutexes.grid_lock);*/
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
-                pthread_mutex_lock(mutexes.traceback_lock);
+                /*pthread_mutex_lock(mutexes.traceback_lock);*/
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
-                pthread_mutex_unlock(mutexes.traceback_lock);
+                /*pthread_mutex_unlock(mutexes.traceback_lock);*/
 
                 if (pointVectorPtr) {
                     pthread_mutex_lock(mutexes.addPath_lock);          
