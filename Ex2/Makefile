@@ -1,4 +1,5 @@
 all:
+	mkdir -p results
 	make -C CircuitRouter-SeqSolver/
 	make -C CircuitRouter-ParSolver/
 
