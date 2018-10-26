@@ -8,4 +8,4 @@ clean:
 	make clean -C CircuitRouter-SeqSolver/
 
 run:
-	./doTest.sh 4 inputs/random-x128-y128-z3-n128.txt
+	./doTest.sh 4 inputs/random-x256-y256-z5-n256.txt
