@@ -4,6 +4,7 @@ all:
 
 clean:	
 	rm -f inputs/*.res inputs/*.old
+	rm -f results/*.csv
 	make clean -C CircuitRouter-ParSolver/
 	make clean -C CircuitRouter-SeqSolver/
 
