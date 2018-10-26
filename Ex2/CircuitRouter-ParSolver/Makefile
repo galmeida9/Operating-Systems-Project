@@ -29,7 +29,7 @@ $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	@echo Cleaning...
+	@echo Cleaning ParSolver.. .
 	rm -f $(OBJS) $(TARGET)
 
 	

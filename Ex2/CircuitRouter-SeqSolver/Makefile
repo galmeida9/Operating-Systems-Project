@@ -28,7 +28,7 @@ $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	@echo Cleaning...
+	@echo Cleaning SeqSolver...
 	rm -f $(OBJS) $(TARGET)
 
 
