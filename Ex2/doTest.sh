@@ -1,7 +1,10 @@
 #!/bin/bash
 n_threads=$1
 path=$2
-path_res=$(echo "$path".speedups.csv"")
+path_aux="${path#*/}"
+results='results/'
+speedupString='.speedups.csv'
+path_res="$results$path_aux$speedupString"
 
 echo '#threads, exec_time, speedup' >> $path_res
 
