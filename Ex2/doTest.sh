@@ -3,23 +3,22 @@ n_threads=$1
 path=$2
 results='results/'
 speedupString='.speedups.csv'
+path_time=$path".res"
 path_res="$results${path#*/}$speedupString"
 
 rm -f $path_res
 echo '#threads, exec_time, speedup' >> $path_res
 
-start1=$(date +%s.%N)
 ./CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $path
-end1=$(date +%s.%N)
-seqTime=$(echo "$end1 - $start1" | bc)
+string=($(sed '4q;d' $path_time))
+seqTime=${string[3]}
 echo 1S, $seqTime, 1 >> $path_res
 
 for i in $(seq 1 $n_threads)
 do
-	start2=$(date +%s.%N)
 	./CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $path
-	end2=$(date +%s.%N)
-	parTime=$(echo "$end2 - $start2" | bc)
+    string=($(sed '4q;d' $path_time))
+    parTime=${string[3]}
 	speedup=$(echo "scale=6; ${seqTime}/${parTime}" | bc)
     echo $i, $parTime, ${speedup} >> $path_res
 done

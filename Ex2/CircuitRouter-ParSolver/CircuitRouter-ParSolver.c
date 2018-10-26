@@ -205,11 +205,11 @@ int main(int argc, char** argv){
     assert(pathVectorListPtr);
 
     pthread_mutex_t queue_lock, grid_lock, traceback_lock, add_lock, addPath_lock;
-    pthread_mutex_init(&queue_lock, NULL);
-    pthread_mutex_init(&grid_lock, NULL);
-    pthread_mutex_init(&traceback_lock, NULL);
-    pthread_mutex_init(&addPath_lock, NULL);
-    pthread_mutex_init(&add_lock, NULL);
+    if (pthread_mutex_init(&queue_lock, NULL)      ||
+        pthread_mutex_init(&grid_lock, NULL)       ||
+        pthread_mutex_init(&traceback_lock, NULL)  ||
+        pthread_mutex_init(&addPath_lock, NULL)    ||
+        pthread_mutex_init(&add_lock, NULL) ) exit(-1);
     
     router_mutex_t mutexes = {&queue_lock, &grid_lock, &traceback_lock, &add_lock, &addPath_lock};
  	router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, mutexes};   
@@ -219,12 +219,14 @@ int main(int argc, char** argv){
     for (int j = 0; j < n_threads; j++) {
         if (pthread_create(&threads[j], 0, (void *) router_solve, (void *) &routerArg) != 0){
         	printf("Erro ao criar Threads\n");
+            exit(-1);
         }
     }
 
     for (int i = 0; i < n_threads; i++) {
         if (pthread_join(threads[i], NULL) != 0){
             printf("Erro ao receber Threads\n");
+            exit(-1);
         }
     }
     TIMER_T stopTime;
@@ -265,11 +267,12 @@ int main(int argc, char** argv){
     list_free(pathVectorListPtr);
 
     fclose(resultFp);
-    pthread_mutex_destroy(&queue_lock);
-    pthread_mutex_destroy(&grid_lock);
-    pthread_mutex_destroy(&traceback_lock);
-    pthread_mutex_destroy(&add_lock);
-    pthread_mutex_destroy(&addPath_lock);
+
+    if (pthread_mutex_destroy(&queue_lock)      ||
+        pthread_mutex_destroy(&grid_lock)       ||
+        pthread_mutex_destroy(&traceback_lock)  ||
+        pthread_mutex_destroy(&add_lock)        ||
+        pthread_mutex_destroy(&addPath_lock) ) exit(-1);
     
     exit(0);
 }
