@@ -5,6 +5,7 @@ results='results/'
 speedupString='.speedups.csv'
 path_res="$results${path#*/}$speedupString"
 
+rm -f $path_res
 echo '#threads, exec_time, speedup' >> $path_res
 
 start1=$(date +%s.%N)
