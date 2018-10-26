@@ -23,8 +23,8 @@ $./CircuitSolver-ParSolver (argumentos).
 				vai correr todos os testes execepto os de 512. Este corre se na raiz do arquivo.
 
 			2- $make doTest
-				vai correr um teste default, que e com tamnho 256 e 4 threads, usado nomeadamente para
-				testes. Como o anterior tambem se executa na raiz do arquivo
+				vai correr um teste default, que tem como argumentos tamanho 256 e 4 threads, usado 
+				nomeadamente para testes. Como o anterior tambem se executa na raiz do arquivo
 
 			3- ./doTest.sh (nthreads) (nome do ficheiro)
 				para correr um input repetidamente ate o numero de treads indicado, este por sua vez
