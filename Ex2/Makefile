@@ -8,5 +8,8 @@ clean:
 	make clean -C CircuitRouter-ParSolver/
 	make clean -C CircuitRouter-SeqSolver/
 
-run:
+doTest:
 	./doTest.sh 4 inputs/random-x256-y256-z5-n256.txt
+
+doTestAll:
+	./doTestAll.sh 4
