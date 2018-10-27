@@ -267,7 +267,7 @@ int main(int argc, char** argv){
 
     fclose(resultFp);
 
-    if (pthread_mutex_destroy(&queue_lock)      ||
+    if (pthread_mutex_destroy(&queue_lock)  ||
         pthread_mutex_destroy(&add_lock)    ||
         pthread_rwlock_destroy(&grid_lock) ) exit(-1);
     
