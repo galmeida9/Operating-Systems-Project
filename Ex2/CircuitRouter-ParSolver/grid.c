@@ -286,7 +286,7 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     for (i = 1; i < (n-1); i++){ 
         long* gridPointPtr = (long*)vector_at(vector_aux, i);
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-        grid_lockMutexPoint(gridPtr, x, y, z);
+        if (grid_lockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
         if ((*gridPointPtr) == GRID_POINT_FULL){ 
             for (j = 1; j <= i; j++){
                 long* gridPointPtr1 = (long*)vector_at(vector_aux, j);
@@ -303,15 +303,9 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
         long* gridPointPtr = (long*)vector_at(vector_aux, i);
         printf("%s", (*gridPointPtr==GRID_POINT_FULL)?"fds\n":"");
         *gridPointPtr = GRID_POINT_FULL; 
-    }
-
-
-    for (i = 1; i < (n-1); i++){
-        long* gridPointPtr = (long*)vector_at(vector_aux, i);	
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
         if (grid_unlockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
-	}
-	
+    }
 
     return 1;
 }
