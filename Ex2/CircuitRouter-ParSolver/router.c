@@ -313,7 +313,6 @@ void router_solve (void* argPtr){
      * 'expansion' and 'traceback' phase for each source/destination pair.
      */
     while (1) {
-        printf("comeco do while\n");
 		pathFound = 0;
         pair_t* coordinatePairPtr;
         if (pthread_mutex_lock(mutexes.queue_lock)) printf("Erro\n");
@@ -337,27 +336,24 @@ void router_solve (void* argPtr){
         vector_t* pointVectorPtr = NULL;
  
         while(!pathFound){
-			printf("comeco do segundo while\n");
             grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */        
-        
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
-				printf("fez expansion\n");
                 if (pointVectorPtr) {
 /*                    if (pthread_rwlock_wrlock(mutexes.grid_lock)) printf("Erro\n");*/
                     if (grid_addPath_Ptr(gridPtr, pointVectorPtr)){ 
-                        printf("meteu path\n");
 						success = TRUE;
                         pathFound = 1;  
                     }
                     else {
+                        success = FALSE;
 						vector_free(pointVectorPtr);
-						printf("nao encontrou um path bom\n");
 /*                   if (pthread_rwlock_unlock(mutexes.grid_lock)) printf("Erro\n");*/
                 	}
             	}
             	else break;
 			}
+            else break;
         }
 
         if (success) {
