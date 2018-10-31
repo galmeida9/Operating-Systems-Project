@@ -278,9 +278,9 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long n = vector_getSize(pointVectorPtr), x,y,z;
     vector_t* vector_aux = vector_alloc(n);
     vector_copy(vector_aux, pointVectorPtr);
-	/*printf("size: %lu id: %d\n", pointVectorPtr->size, id);*/
     
-    qsort_r((void**)((vector_aux->elements)+1), n-2, sizeof(void*), compare, gridPtr);
+    vector_sort_r(vector_aux, 1, n-2, compare, (void*) gridPtr);
+   /* qsort_r((void**)((vector_aux->elements)+1), n-2, sizeof(void*), compare, gridPtr);*/
 
 
     for (i = 1; i < (n-1); i++){ 
@@ -296,7 +296,6 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
             vector_free(vector_aux);
             return 0;
         }
-        //printf("%ld %ld %ld\n", x,y,z);
     }
     
 

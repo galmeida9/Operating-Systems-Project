@@ -68,7 +68,7 @@
  * =============================================================================
  */
 
-
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include "types.h"
@@ -205,6 +205,16 @@ void
 vector_sort (vector_t* vectorPtr, int (*compare) (const void*, const void*))
 {
     qsort((void*)vectorPtr->elements, vectorPtr->size, sizeof(void**), compare);
+}
+
+/* =============================================================================
+ * vector_sort_r
+ * =============================================================================
+ */
+
+void
+vector_sort_r (vector_t* vectorPtr, long start, long size, int (*compare) (const void*, const void*, void* arg), void* arg){
+    qsort_r((void*)((vectorPtr->elements)+start), size, sizeof(void**), compare, arg);
 }
 
 
