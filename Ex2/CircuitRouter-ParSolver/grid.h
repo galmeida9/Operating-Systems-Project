@@ -57,6 +57,7 @@
 #include <stdio.h>
 #include "lib/types.h"
 #include "lib/vector.h"
+#include <pthread.h>
 
 
 typedef struct grid {
@@ -65,6 +66,7 @@ typedef struct grid {
     long depth;
     long* points;
     long* points_unaligned;
+    pthread_mutex_t *mutex_vector;
 } grid_t;
 
 enum {

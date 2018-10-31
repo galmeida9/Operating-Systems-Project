@@ -50,7 +50,7 @@
  * =============================================================================
  */
 
-
+#define _GNU_SOURCE
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -61,6 +61,7 @@
 #include "grid.h"
 #include "lib/types.h"
 #include "lib/vector.h"
+#include <pthread.h>
 
 
 const unsigned long CACHE_LINE_SIZE = 32UL;
@@ -72,6 +73,7 @@ const unsigned long CACHE_LINE_SIZE = 32UL;
  */
 grid_t* grid_alloc (long width, long height, long depth){
     grid_t* gridPtr;
+    int i;
 
     gridPtr = (grid_t*)malloc(sizeof(grid_t));
     if (gridPtr) {
@@ -81,6 +83,8 @@ grid_t* grid_alloc (long width, long height, long depth){
         long n = width * height * depth;
         long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
         assert(points_unaligned);
+        gridPtr->mutex_vector = (pthread_mutex_t *)malloc(n* sizeof(pthread_mutex_t));
+        for (i=0; i<n; i++) pthread_mutex_init(&(gridPtr->mutex_vector[i]), NULL);
         gridPtr->points_unaligned = points_unaligned;
         gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
                                           & ~(CACHE_LINE_SIZE-1)))
@@ -96,6 +100,13 @@ grid_t* grid_alloc (long width, long height, long depth){
  * =============================================================================
  */
 void grid_free (grid_t* gridPtr){
+    int i;
+    long n;
+    n = (gridPtr->width) * (gridPtr->height) * (gridPtr->depth);
+
+     
+    for (i=0; i<n; i++) pthread_mutex_destroy(&(gridPtr->mutex_vector[i]));
+    free(gridPtr->mutex_vector);
     free(gridPtr->points_unaligned);
     free(gridPtr);
 }
@@ -137,6 +148,22 @@ bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z){
  */
 long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z){
     return &(gridPtr->points[(z * gridPtr->height + y) * gridPtr->width + x]);
+}
+
+/* =============================================================================
+ * grid_lockMutexPoint
+ * =============================================================================
+ */
+int grid_lockMutexPoint (grid_t* gridPtr, long x, long y, long z){
+    return pthread_mutex_lock(&(gridPtr->mutex_vector[(z * gridPtr->height + y) * gridPtr->width + x]));
+}
+
+/* =============================================================================
+ * grid_unlockMutexPoint
+ * =============================================================================
+ */
+int grid_unlockMutexPoint (grid_t* gridPtr, long x, long y, long z){
+    return pthread_mutex_unlock(&(gridPtr->mutex_vector[(z * gridPtr->height + y) * gridPtr->width + x]));
 }
 
 
@@ -211,25 +238,68 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
     }
 }
 
+/*
+ *
+ * 
+ */
+int compare(const void* p1, const void* p2, void* grid){
+    long* point1 = (long*) p1;
+    long* point2 = (long*) p2; /*PROBBBBBB*/
+    long x1,y1,z1, x2,y2,z2;
+    grid_t* gridPtr = (grid_t*) grid;
+    printf("%d\n", (*point1 == GRID_POINT_EMPTY)?1:0);
+    
+    grid_getPointIndices(gridPtr, point1, &x1, &y1, &z1);
+    grid_getPointIndices(gridPtr, point2, &x2, &y2, &z2);
+    printf("%ld %ld %ld\n", x1,y1,z1);
+    printf("%ld %ld %ld\n", x2,y2,z2);
+    if (x1<x2) return -1;
+    else if (x1>x2) return 1;
+    else if (x1==x2){
+            if (y1<y2) return -1;
+            else if (y1>y2) return 1;
+            else if(y1==y2){
+                if (z1<z2) return -1;
+                else if (z1>z2) return 1;
+                else if (z1==z2) return 0;
+            }
+    }
+    return 0;
+    
+}
 
 /* =============================================================================
  * grid_addPath_Ptr
  * =============================================================================
  */
 int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i;
-    long n = vector_getSize(pointVectorPtr);
+    long i, j;
+    long n = vector_getSize(pointVectorPtr), x,y,z;
     
-    for (i = 1; i < (n-1); i++) {
+    qsort_r((void*)pointVectorPtr->elements, pointVectorPtr->size, sizeof(void**), compare, gridPtr);
+    
+    for (i = 1; i < (n-1); i++){ 
         long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-        if ((*gridPointPtr) == GRID_POINT_FULL) return 0;
+        if ((*gridPointPtr) == GRID_POINT_FULL){ 
+            for (j = 1; j < i; j++){
+                long* gridPointPtr1 = (long*)vector_at(pointVectorPtr, j);
+                grid_getPointIndices(gridPtr, gridPointPtr1, &x, &y, &z);
+                if (grid_unlockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");                
+            }
+            return 0;
+        }
+        grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
+        /*printf("%ld %ld %ld\n", x,y,z);*/
+        if (grid_lockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
     }
-    
-    
-    for (i = 1; i < (n-1); i++) {
+        
+    for (i = 1; i < (n-1); i++){
         long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
         *gridPointPtr = GRID_POINT_FULL; 
+        grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
+        if (grid_unlockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
     }
+
     return 1;
 }
 
@@ -256,6 +326,8 @@ void grid_print (grid_t* gridPtr, FILE *fp){
         fputs("\n",fp);
     }
 }
+
+
 
 
 /* =============================================================================

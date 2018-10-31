@@ -228,6 +228,7 @@ int main(int argc, char** argv){
             exit(-1);
         }
     }
+    free(threads);
     TIMER_T stopTime;
     TIMER_READ(stopTime);
 

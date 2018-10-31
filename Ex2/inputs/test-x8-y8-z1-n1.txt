@@ -1,0 +1,6 @@
+# Dimensions (x, y, z)
+d  8 8 1
+
+# Paths: Sources (x, y, z) -> Destinations (x, y, z)
+p  2 2 0     7  3 0
+

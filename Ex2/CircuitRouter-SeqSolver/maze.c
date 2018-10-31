@@ -237,6 +237,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
         }
         
     } /* iterate over lines in input file */
+    fclose(inputFile);
     
     
     /*

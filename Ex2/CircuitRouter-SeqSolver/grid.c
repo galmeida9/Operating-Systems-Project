@@ -207,6 +207,7 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
         long x = coordinatePtr->x;
         long y = coordinatePtr->y;
         long z = coordinatePtr->z;
+        
         grid_setPoint(gridPtr, x, y, z, GRID_POINT_FULL);
     }
 }
