@@ -315,14 +315,16 @@ void router_solve (void* argPtr){
     while (1) {
 		pathFound = 0;
         pair_t* coordinatePairPtr;
-        if (pthread_mutex_lock(mutexes.queue_lock)) printf("Erro\n");
-        /*printf("ID on QUEUE LOCK: %ld\n", (long) pthread_self());*/
+        if (pthread_mutex_lock(mutexes.queue_lock)){ 
+            fprintf(stderr, "Erro a obter mutex da queue\n");
+            pthread_exit(NULL);
+        }
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
         } else {
             coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
         }
-        if (pthread_mutex_unlock(mutexes.queue_lock)) printf("Erro\n");
+        while (pthread_mutex_unlock(mutexes.queue_lock)) fprintf(stderr, "Erro a dar unlock ao mutex da queue\n");
         if (coordinatePairPtr == NULL) {
             break;
         }
@@ -340,7 +342,6 @@ void router_solve (void* argPtr){
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
-/*                    if (pthread_rwlock_wrlock(mutexes.grid_lock)) printf("Erro\n");*/
                     if (grid_addPath_Ptr(gridPtr, pointVectorPtr)){ 
 						success = TRUE;
                         pathFound = 1;  
@@ -348,7 +349,6 @@ void router_solve (void* argPtr){
                     else {
                         success = FALSE;
 						vector_free(pointVectorPtr);
-/*                   if (pthread_rwlock_unlock(mutexes.grid_lock)) printf("Erro\n");*/
                 	}
             	}
             	else break;
@@ -367,9 +367,12 @@ void router_solve (void* argPtr){
      * Add my paths to global list
      */
     list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
-    if (pthread_mutex_lock(mutexes.add_lock)) printf("Erro\n");
+    if (pthread_mutex_lock(mutexes.add_lock)){ 
+        fprintf(stderr, "Erro a dar lock ao mutex do pathVectorListPtr\n");
+        pthread_exit(NULL);
+    }
     list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
-    if (pthread_mutex_unlock(mutexes.add_lock)) printf("Erro\n");
+    while (pthread_mutex_unlock(mutexes.add_lock)) fprintf(stderr, "Erro a dar unlock ao mutex do pathVectorListPtr\n");
 
     
     grid_free(myGridPtr);

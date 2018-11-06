@@ -5,10 +5,13 @@ As diretorias existentes no arquivo são:
 	2- CircuitSolver-SeqSolver
 		contém a solução do Exercicio 1 do projeto dado pelo corpo docente
 
-	3- inputs
+        3- lib
+                livraria de apoio
+		
+	4- inputs
 		contém os inputs de texto standard 
 
-	4- results
+	5- results
 		contém os outputs criados pelo script doTest.sh
 
 =====================================================================================================
@@ -19,29 +22,28 @@ vai compilar o ParSolver e o SeqSolver.
 $./CircuitSolver-ParSolver (argumentos).
 	Para executar o doTest.sh existem algumas opções (todas executáveis na raiz):
 
-			1- $make doTestAll (nthreads)
-				vai correr todos os testes execepto os de 512.
+			1- $make doTestAll
+				vai correr todos os testes com 4 threads exceto os de 512.
 
 			2- $make doTest
-				vai correr um teste default, que resolve um circuito de tamanho 256x256 com 4 threads, usado 
-				nomeadamente para testes.
+				vai correr um teste default, que resolve um circuito de tamanho 256x256 com 4 threads, usado nomeadamente para testes.
 
 			3- ./doTest.sh (nthreads) (nome do ficheiro)
-				para correr um input repetidamente até o número de threads indicado, começando pelo sequencial 
+				vai correr um input repetidamente até o número de threads indicado, começando pelo sequencial.
+            
+            4- ./doTestAll.sh (nthreads)
+                vai correr todos os testes exceto os de 512 repetidamente até o número de threads indicado.
 
 
 =====================================================================================================
 
-Usamos duas máquinas para correr os testes:
+    Para correr os testes usamos o Sigma:
+        OS: Debian 4.9.110-3+deb9u4
+        CPU: Intel(R) Xeon(R) CPU E5-2620 0 @ 2.00GHz
+        Max Turbo Frequency: 2.50 GHz
 
-		Máquina 1:
-			OS: Ubuntu 18.04 LTS 64bits (dual boot)
-			CPU: Intel(R) Core(TM) i5-7500 @ 3.40GHz
-			Max Turbo Frequency: 3.80GHz
-
-		Máquina 2:
-			OS: OpenSUSE Leap 42.3 64bits
-            CPU: Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz
-			Max Turbo Frequency: 3.80GHz
+=====================================================================================================
+    
+    Fizemos também um script que indica o speedup de cada ficheiro com 4 threads (que corresponde à 6ª linha), chamado echoSpeedup.sh .
 
 =====================================================================================================

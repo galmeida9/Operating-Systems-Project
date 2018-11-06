@@ -239,9 +239,9 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
     }
 }
 
-/*
- *
- * 
+/* =============================================================================
+ * compare
+ * =============================================================================
  */
 int compare(const void* p1,const void* p2, void* grid){
     long** point1 = (long**) p1;
@@ -251,9 +251,7 @@ int compare(const void* p1,const void* p2, void* grid){
 
     grid_getPointIndices(gridPtr, *point1, &x1, &y1, &z1);
     grid_getPointIndices(gridPtr, *point2, &x2, &y2, &z2);
-/*    printf("new\n");
-    printf("%ld %ld %ld\n", x1,y1,z1);
-    printf("%ld %ld %ld\n", x2,y2,z2);*/
+
     if (x1<x2) return -1;
     else if (x1>x2) return 1;
     else if (x1==x2){
@@ -277,21 +275,24 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long i, j;
     long n = vector_getSize(pointVectorPtr), x,y,z;
     vector_t* vector_aux = vector_alloc(n);
-    vector_copy(vector_aux, pointVectorPtr);
+    
+    if (vector_copy(vector_aux, pointVectorPtr)==FALSE || vector_aux==NULL) return 0;
     
     vector_sort_r(vector_aux, 1, n-2, compare, (void*) gridPtr);
-   /* qsort_r((void**)((vector_aux->elements)+1), n-2, sizeof(void*), compare, gridPtr);*/
-
 
     for (i = 1; i < (n-1); i++){ 
         long* gridPointPtr = (long*)vector_at(vector_aux, i);
+        if (gridPointPtr == NULL) return 0;
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-        if (grid_lockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
+        if (grid_lockMutexPoint(gridPtr, x, y, z)){
+            fprintf(stderr, "Erro a obter mutex dum ponto na grid\n");
+            pthread_exit(NULL);
+        }
         if ((*gridPointPtr) == GRID_POINT_FULL){ 
             for (j = 1; j <= i; j++){
                 long* gridPointPtr1 = (long*)vector_at(vector_aux, j);
                 grid_getPointIndices(gridPtr, gridPointPtr1, &x, &y, &z);
-                if (grid_unlockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
+                while (grid_unlockMutexPoint(gridPtr, x, y, z)) fprintf(stderr, "Erro a dar unlock a um mutex dum ponto da grid\n");
             }
             vector_free(vector_aux);
             return 0;
@@ -301,10 +302,10 @@ int grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
 
     for (i = 1; i < (n-1); i++){
         long* gridPointPtr = (long*)vector_at(vector_aux, i);
-        printf("%s", (*gridPointPtr==GRID_POINT_FULL)?"fds\n":"");
+        if (gridPointPtr == NULL) return 0;
         *gridPointPtr = GRID_POINT_FULL; 
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-        if (grid_unlockMutexPoint(gridPtr, x, y, z)) printf("Erro\n");
+        while (grid_unlockMutexPoint(gridPtr, x, y, z)) fprintf(stderr, "Erro a dar unlock a um mutex dum ponto da grid\n");
     }
     
     vector_free(vector_aux);

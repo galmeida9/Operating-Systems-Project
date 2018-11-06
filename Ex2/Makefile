@@ -11,7 +11,6 @@ all:
 clean:	
 	echo Cleaning .res, .old and .speedups.csv
 	rm -f inputs/*.res inputs/*.old
-	rm -f results/*.csv
 	make clean -C CircuitRouter-ParSolver/
 	make clean -C CircuitRouter-SeqSolver/
 	echo Done!

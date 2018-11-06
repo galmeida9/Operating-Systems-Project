@@ -205,26 +205,24 @@ int main(int argc, char** argv){
     assert(pathVectorListPtr);
 
     pthread_mutex_t queue_lock, add_lock;
-    pthread_rwlock_t grid_lock;
-    if (pthread_mutex_init(&queue_lock, NULL)   ||
-        pthread_mutex_init(&add_lock, NULL)     ||
-        pthread_rwlock_init(&grid_lock, NULL) ) exit(-1);
+    if (pthread_mutex_init(&queue_lock, NULL) || pthread_mutex_init(&add_lock, NULL)){
+        fprintf(stderr, "Erro ao inicializar mutexes\n");
+        exit(-1);
+    }
     
-    router_mutex_t mutexes = {&queue_lock, &add_lock, &grid_lock};
- 	router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, mutexes};   
+    router_mutex_t mutexes = {&queue_lock, &add_lock};
+    router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, mutexes};   
     TIMER_T startTime;
     TIMER_READ(startTime);
 
     for (int j = 0; j < n_threads; j++) {
-        if (pthread_create(&threads[j], 0, (void *) router_solve, (void *) &routerArg) != 0){
-        	printf("Erro ao criar Threads\n");
-            exit(-1);
-        }
+        while (pthread_create(&threads[j], 0, (void *) router_solve, (void *) &routerArg) != 0)
+            fprintf(stderr, "Erro a criar thread\n");
     }
 
     for (int i = 0; i < n_threads; i++) {
         if (pthread_join(threads[i], NULL) != 0){
-            printf("Erro ao receber Threads\n");
+            fprintf(stderr, "Erro ao receber Threads\n");
             exit(-1);
         }
     }
@@ -268,9 +266,10 @@ int main(int argc, char** argv){
 
     fclose(resultFp);
 
-    if (pthread_mutex_destroy(&queue_lock)  ||
-        pthread_mutex_destroy(&add_lock)    ||
-        pthread_rwlock_destroy(&grid_lock) ) exit(-1);
+    if (pthread_mutex_destroy(&queue_lock) || pthread_mutex_destroy(&add_lock)){
+        fprintf(stderr, "Erro a destruir mutexes\n");
+        exit(-1);
+    }
     
     exit(0);
 }
