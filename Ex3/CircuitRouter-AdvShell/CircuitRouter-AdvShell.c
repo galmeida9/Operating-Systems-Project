@@ -10,15 +10,19 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <limits.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
+#include <fcntl.h>
 
 #define COMMAND_EXIT "exit"
 #define COMMAND_RUN "run"
+#define SERVER_PATH "/tmp/servidor.pipe"
 
 #define MAXARGS 3
 #define BUFFER_SIZE 100
@@ -63,13 +67,47 @@ void printChildren(vector_t *children) {
     puts("END.");
 }
 
+void readFromStdin(void* buffer){
+    char buffer_aux[BUFFER_SIZE];
+    char* buffer_stdin = (char*) buffer;
+    strcpy(buffer_stdin, "");
+    while (strcmp(buffer, "exit")){
+        fgets(buffer_aux, BUFFER_SIZE, stdin);
+        buffer_stdin = strtok(buffer_aux, "\n");
+    }
+}
+
+void readFromPipe(void* buffer){
+    /*
+    char** buffer_aux = (char**) buffer;
+    char* newPipe = (char*) buffer_aux[0];
+    char* buffer_pipe = (char*) buffer_aux[1];
+    strcpy(newPipe, "");
+    strcpy(buffer_pipe, "");
+    int fserv;
+    if ( (fserv = open(SERVER_PATH, O_RDONLY)) < 0){
+        printf("Erro ao inicilizar pipe.\n");
+        exit(-1);
+    }
+
+    while (1){
+        read(fserv, newPipe, BUFFER_SIZE);
+        read(fserv, buffer_pipe, BUFFER_SIZE);
+    }*/
+}
+
+
 int main (int argc, char** argv) {
 
     char *args[MAXARGS + 1];
-    char buffer[BUFFER_SIZE];
+    char *buffer;
+    char buffer_stdin[BUFFER_SIZE];
+    char buffer_pipe[2][BUFFER_SIZE];
+    char newPipe[BUFFER_SIZE];
     int MAXCHILDREN = -1;
     vector_t *children;
     int runningChildren = 0;
+    pthread_t threads[2];
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
@@ -77,16 +115,29 @@ int main (int argc, char** argv) {
 
     children = vector_alloc(MAXCHILDREN);
 
+    unlink(SERVER_PATH);
+
+    if (mkfifo(SERVER_PATH, 0777)<0){
+        printf("Erro ao criar pipe.\n");
+        exit(-1);
+    }
 
     printf("Welcome to CircuitRouter-AdvShell\n\n");
-
+    
+    if (pthread_create(&threads[0], NULL, (void*) readFromStdin, (void*) buffer_stdin));
+    if (pthread_create(&threads[1], NULL, (void*) readFromPipe, (void*) buffer_pipe));
+   
     while (1) {
         int numArgs;
+        
+        while (strcmp(buffer_stdin, "")==0 && strcmp(buffer_pipe[1], "")==0);
+        if (strcmp(buffer_stdin, "")!=0) buffer = buffer_stdin;
+        else if (strcmp(buffer_pipe[1], "")!=0) buffer = buffer_pipe[1];
 
         numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
-
+        printf("%s", buffer);
         /* EOF (end of file) do stdin ou comando "sair" */
-        if (numArgs < 0 || (numArgs > 0 && (strcmp(args[0], COMMAND_EXIT) == 0))) {
+        if (numArgs < 0 || (numArgs > 0 && buffer==buffer_stdin && (strcmp(args[0], COMMAND_EXIT) == 0))) {
             printf("CircuitRouter-AdvShell will exit.\n--\n");
 
             /* Espera pela terminacao de cada filho */

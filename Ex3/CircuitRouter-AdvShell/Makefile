@@ -5,7 +5,7 @@ SOURCES = CircuitRouter-AdvShell.c
 SOURCES+= ../lib/commandlinereader.c ../lib/vector.c
 OBJS = $(SOURCES:%.c=%.o)
 CC   = gcc
-CFLAGS =-Wall -std=gnu99 -I../
+CFLAGS =-Wall -std=gnu99 -pthread -I../
 LDFLAGS=-lm
 TARGET = CircuitRouter-AdvShell
 
@@ -20,6 +20,7 @@ CircuitRouter-AdvShell.o: CircuitRouter-AdvShell.c CircuitRouter-AdvShell.h ../l
 
 $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -o CircuitRouter-Client CircuitRouter-Client.c
 
 clean:
 	@echo Cleaning AdvShell...
