@@ -33,7 +33,6 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 void waitForChild(vector_t *children);
 void printChildren(vector_t *children);
 
-vector_t *children;
 
 int main (int argc, char** argv) {
 
@@ -46,6 +45,7 @@ int main (int argc, char** argv) {
     int MAXCHILDREN = -1, fserv, fcli, maxFD, result, n, j;
     int runningChildren = 0;
 	fd_set readset;
+	vector_t *children;
 
 
     if(argv[1] != NULL){
@@ -64,7 +64,7 @@ int main (int argc, char** argv) {
     printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
 	write(1, msg_serv, strlen(msg_wait));
-	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
+	if ((fserv = open(SERVER_PATH, O_RDWR))<0){
 		printf("Erro ao inicializar pipe.\n");
 		exit(-1);
 	}
@@ -75,7 +75,7 @@ int main (int argc, char** argv) {
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
-	signal(SIGCHLD, childTime);
+	/*signal(SIGCHLD, childTime);*/
 	signal(SIGPIPE, NULL);
 
     while (1) {
@@ -248,4 +248,3 @@ void printChildren(vector_t *children) {
     }
     puts("END.");
 }
-

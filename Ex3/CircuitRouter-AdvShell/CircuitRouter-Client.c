@@ -56,11 +56,9 @@ int main(int argc, char** argv){
         write(fserv, path, strlen(path)+1);
 		fcli = open(path, O_RDONLY);
 		read(fcli, buffer_aux, BUF);
-		printf("1-%s", buffer_aux);
-		printf("Buffer: %s", buffer);
 		write(fserv, buffer, strlen(buffer)+1);
 		read(fcli, buffer_aux, BUF);
-		printf("2-%s", buffer_aux);
+		printf("%s", buffer_aux);
 		close(fcli);
     }
 
