@@ -27,6 +27,38 @@
 #define MAXARGS 3
 #define BUFFER_SIZE 100
 
+void brokenPipe(int sig){
+	unlink(SERVER_PATH);
+	exit(0);
+}
+
+int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize){
+	int numTokens = 0;
+  	char *s = " \r\n\t";
+	int i;
+	char *token;
+
+  	if (argVector == NULL || buffer == NULL || vectorSize <= 0 || bufferSize <= 0)
+    	return 0;
+
+  	/* get the first token */
+  	token = strtok(buffer, s);
+
+  	/* walk through other tokens */
+  	while( numTokens < vectorSize-1 && token != NULL ) {
+    	argVector[numTokens] = token;
+    	numTokens ++;
+    	token = strtok(NULL, s);
+  	}
+
+  	for (i = numTokens; i<vectorSize; i++) {
+    	argVector[i] = NULL;
+  	}
+
+  	return numTokens;
+}
+
+
 void waitForChild(vector_t *children) {
     while (1) {
         child_t *child = malloc(sizeof(child_t));
@@ -74,11 +106,14 @@ int main (int argc, char** argv) {
     char buffer[BUFFER_SIZE];
     char pathPipe[BUFFER_SIZE];
 	char msg_serv[] = "Starting SERVER pipe.\n",
-		 msg_wait[] = "Wainting for results.\n";
-    int MAXCHILDREN = -1, fserv, fcli, maxFD, result, n;
+		 msg_wait[] = "Wainting for results.\n",
+		 msg_recv[] = "Message Received.\n";
+    int MAXCHILDREN = -1, fserv, fcli, maxFD, result, n, j;
     vector_t *children;
     int runningChildren = 0;
 	fd_set readset;
+
+	signal(SIGPIPE, brokenPipe);
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
@@ -96,7 +131,7 @@ int main (int argc, char** argv) {
     printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
 	write(1, msg_serv, strlen(msg_wait));
-	if ((fserv = open(SERVER_PATH, O_RDONLY))<0){
+	if ((fserv = open(SERVER_PATH, O_RDWR))<0){
 		printf("Erro ao inicializar pipe.\n");
 		exit(-1);
 	}
@@ -111,28 +146,33 @@ int main (int argc, char** argv) {
     while (1) {
         int numArgs;
 		strcpy(pathPipe, "");
+		pathPipe[0] = '\0';
+		buffer[0] = '\0';
 
 		result = select(maxFD+1, &readset, NULL, NULL, NULL);
 		if (result == -1) perror("select()");
 		else if (result){
 			if (FD_ISSET(fileno(stdin), &readset)){
-				n = read(0, buffer, BUFFER_SIZE);
+				fgets(buffer, BUFFER_SIZE, stdin);
 			}
 			if (FD_ISSET(fserv, &readset)){
-				printf("Oie\n");
 				read(fserv, pathPipe, BUFFER_SIZE);
-				printf("%s\n", pathPipe);
-				printf("wut\n");
+				/*	printf("%s\n", pathPipe);*/
+				fcli = open(pathPipe, O_WRONLY);
+				write(fcli, msg_recv, strlen(msg_recv)+1);
 				read(fserv, buffer, BUFFER_SIZE);
-				printf("%s\n", buffer);
+				write(fcli, msg_recv, strlen(msg_recv)+1);
+				/*printf("%s\n", buffer);*/
+				close(fcli);
 			}
 		}
-		continue;
-        
-        numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
-        printf("%s", buffer);
+		FD_SET(fserv, &readset);
+		FD_SET(fileno(stdin), &readset);
+
+        numArgs = parseArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
+		printf("%s\n", buffer);
         /* EOF (end of file) do stdin ou comando "sair" */
-        if (numArgs < 0 || (numArgs > 0 && strcmp(pathPipe, "") && (strcmp(args[0], COMMAND_EXIT) == 0))) {
+        if (numArgs < 0 || (numArgs > 0 && (strcmp(pathPipe, "")==0) && (strcmp(args[0], COMMAND_EXIT) == 0))) {
             printf("CircuitRouter-AdvShell will exit.\n--\n");
 
             /* Espera pela terminacao de cada filho */

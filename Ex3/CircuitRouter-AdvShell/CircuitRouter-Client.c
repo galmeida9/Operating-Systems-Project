@@ -10,6 +10,17 @@
 #define CLI "/tmp/client1.pipe"
 #define BUF 1024
 
+void leComando(char* ptr, int size){
+	char c;
+	int i=0, j;
+	for (j=0; j<size; j++) ptr[j] = '\0';
+	while ((c=getchar())!='\n' && i<(size+1)){
+		ptr[i++] = c;
+	}
+	ptr[i++] = '\n';
+	ptr[i] = '\0';
+}
+
 void apanhaCTRLC(int sig){
     unlink(CLI);
     exit(0);
@@ -17,8 +28,8 @@ void apanhaCTRLC(int sig){
 
 int main(int argc, char** argv){
     int fcli, fserv;
-    char buffer[BUF], path[BUF];
-	strcpy(path, CLI); 
+    char buffer[BUF], path[BUF], buffer_aux[BUF];
+	strcpy(path, CLI);
 
     if (argc!=2){
         printf("Falta o argumento da pipe do servidor\n");
@@ -40,16 +51,15 @@ int main(int argc, char** argv){
     }
 
     while (1){
-		printf("teste\n");
-        write(fserv, path, strlen(path));
-        write(fserv, "run boas\0", 5);
-		getchar();
-        /*if ((fcli = open(CLI, O_RDONLY)) <0){
-            printf("Erro ao abrir PIPE do cliente1\n");
-            exit(-1);
-        }
-        read(fcli, buffer, BUF);
-        printf("%s\n", buffer); */
+		leComando(buffer, BUF);
+		/*if (strcmp(buffer, "exit\n")==0) break*/;
+        write(fserv, path, strlen(path)+1);
+		fcli = open(path, O_RDONLY);
+		read(fcli, buffer_aux, BUF);
+		write(fserv, buffer, strlen(buffer)+1);
+		read(fcli, buffer_aux, BUF);
+		printf("%s", buffer_aux);
+		close(fcli);
     }
 
     close(fserv);
