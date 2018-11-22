@@ -25,80 +25,15 @@
 #define SERVER_PATH "/tmp/servidor.pipe"
 
 #define MAXARGS 3
-#define BUFFER_SIZE 100
-
-void brokenPipe(int sig){
-	unlink(SERVER_PATH);
-	exit(0);
-}
-
-int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize){
-	int numTokens = 0;
-  	char *s = " \r\n\t";
-	int i;
-	char *token;
-
-  	if (argVector == NULL || buffer == NULL || vectorSize <= 0 || bufferSize <= 0)
-    	return 0;
-
-  	/* get the first token */
-  	token = strtok(buffer, s);
-
-  	/* walk through other tokens */
-  	while( numTokens < vectorSize-1 && token != NULL ) {
-    	argVector[numTokens] = token;
-    	numTokens ++;
-    	token = strtok(NULL, s);
-  	}
-
-  	for (i = numTokens; i<vectorSize; i++) {
-    	argVector[i] = NULL;
-  	}
-
-  	return numTokens;
-}
+#define BUFFER_SIZE 1024
 
 
-void waitForChild(vector_t *children) {
-    while (1) {
-        child_t *child = malloc(sizeof(child_t));
-        if (child == NULL) {
-            perror("Error allocating memory");
-            exit(EXIT_FAILURE);
-        }
-        child->pid = wait(&(child->status));
-        if (child->pid < 0) {
-            if (errno == EINTR) {
-                /* Este codigo de erro significa que chegou signal que interrompeu a espera
-                   pela terminacao de filho; logo voltamos a esperar */
-                free(child);
-                continue;
-            } else {
-                perror("Unexpected error while waiting for child.");
-                exit (EXIT_FAILURE);
-            }
-        }
-        vector_pushBack(children, child);
-        return;
-    }
-}
+void childTime(int sig);
+int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize);
+void waitForChild(vector_t *children);
+void printChildren(vector_t *children);
 
-void printChildren(vector_t *children) {
-    for (int i = 0; i < vector_getSize(children); ++i) {
-        child_t *child = vector_at(children, i);
-        int status = child->status;
-        pid_t pid = child->pid;
-        if (pid != -1) {
-            const char* ret = "NOK";
-            if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-                ret = "OK";
-            }
-            printf("CHILD EXITED: (PID=%d; return %s)\n", pid, ret);
-        }
-    }
-    puts("END.");
-}
-
+vector_t *children;
 
 int main (int argc, char** argv) {
 
@@ -109,11 +44,9 @@ int main (int argc, char** argv) {
 		 msg_wait[] = "Wainting for results.\n",
 		 msg_recv[] = "Message Received.\n";
     int MAXCHILDREN = -1, fserv, fcli, maxFD, result, n, j;
-    vector_t *children;
     int runningChildren = 0;
 	fd_set readset;
 
-	signal(SIGPIPE, brokenPipe);
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
@@ -131,7 +64,7 @@ int main (int argc, char** argv) {
     printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
 	write(1, msg_serv, strlen(msg_wait));
-	if ((fserv = open(SERVER_PATH, O_RDWR))<0){
+	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
 		printf("Erro ao inicializar pipe.\n");
 		exit(-1);
 	}
@@ -142,7 +75,9 @@ int main (int argc, char** argv) {
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
-    
+	signal(SIGCHLD, childTime);
+	signal(SIGPIPE, NULL);
+
     while (1) {
         int numArgs;
 		strcpy(pathPipe, "");
@@ -150,7 +85,7 @@ int main (int argc, char** argv) {
 		buffer[0] = '\0';
 
 		result = select(maxFD+1, &readset, NULL, NULL, NULL);
-		if (result == -1) perror("select()");
+		if (result == -1) continue;
 		else if (result){
 			if (FD_ISSET(fileno(stdin), &readset)){
 				fgets(buffer, BUFFER_SIZE, stdin);
@@ -160,8 +95,7 @@ int main (int argc, char** argv) {
 				/*	printf("%s\n", pathPipe);*/
 				fcli = open(pathPipe, O_WRONLY);
 				write(fcli, msg_recv, strlen(msg_recv)+1);
-				read(fserv, buffer, BUFFER_SIZE);
-				write(fcli, msg_recv, strlen(msg_recv)+1);
+				read(fserv, buffer, BUFFER_SIZE);																	write(fcli, msg_recv, strlen(msg_recv)+1);
 				/*printf("%s\n", buffer);*/
 				close(fcli);
 			}
@@ -183,6 +117,8 @@ int main (int argc, char** argv) {
 
             printChildren(children);
             printf("--\nCircuitRouter-AdvShell ended.\n");
+			/*close(fserv);
+			unlink(SERVER_PATH);*/
             break;
         }
 
@@ -233,3 +169,83 @@ int main (int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+
+/**/
+
+void childTime(int sig){
+	pid_t pid;
+	int status;
+	pid = waitpid(-1, &status, WNOHANG);
+	printf("teste\n");
+	if (WIFEXITED(status)){
+		printf("pid=%d\n", pid);
+	}
+	signal(SIGCHLD, childTime);
+}
+
+int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize){
+	int numTokens = 0;
+  	char *s = " \r\n\t";
+	int i;
+	char *token;
+
+  	if (argVector == NULL || buffer == NULL || vectorSize <= 0 || bufferSize <= 0)
+    	return 0;
+
+  	/* get the first token */
+  	token = strtok(buffer, s);
+
+  	/* walk through other tokens */
+  	while( numTokens < vectorSize-1 && token != NULL ) {
+    	argVector[numTokens] = token;
+    	numTokens ++;
+    	token = strtok(NULL, s);
+  	}
+
+  	for (i = numTokens; i<vectorSize; i++) {
+    	argVector[i] = NULL;
+  	}
+
+  	return numTokens;
+}
+
+void waitForChild(vector_t *children) {
+    while (1) {
+        child_t *child = malloc(sizeof(child_t));
+        if (child == NULL) {
+            perror("Error allocating memory");
+            exit(EXIT_FAILURE);
+        }
+        child->pid = wait(&(child->status));
+        if (child->pid < 0) {
+            if (errno == EINTR) {
+                /* Este codigo de erro significa que chegou signal que interrompeu a espera
+                   pela terminacao de filho; logo voltamos a esperar */
+                free(child);
+                continue;
+            } else {
+                perror("Unexpected error while waiting for child.");
+                exit (EXIT_FAILURE);
+            }
+        }
+        vector_pushBack(children, child);
+        return;
+    }
+}
+
+void printChildren(vector_t *children) {
+    for (int i = 0; i < vector_getSize(children); ++i) {
+        child_t *child = vector_at(children, i);
+        int status = child->status;
+        pid_t pid = child->pid;
+        if (pid != -1) {
+            const char* ret = "NOK";
+            if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                ret = "OK";
+            }
+            printf("CHILD EXITED: (PID=%d; return %s)\n", pid, ret);
+        }
+    }
+    puts("END.");
+}
+

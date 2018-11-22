@@ -52,13 +52,15 @@ int main(int argc, char** argv){
 
     while (1){
 		leComando(buffer, BUF);
-		/*if (strcmp(buffer, "exit\n")==0) break*/;
+		/*if (strcmp(buffer, "exit\n")==0) break;*/
         write(fserv, path, strlen(path)+1);
 		fcli = open(path, O_RDONLY);
 		read(fcli, buffer_aux, BUF);
+		printf("1-%s", buffer_aux);
+		printf("Buffer: %s", buffer);
 		write(fserv, buffer, strlen(buffer)+1);
 		read(fcli, buffer_aux, BUF);
-		printf("%s", buffer_aux);
+		printf("2-%s", buffer_aux);
 		close(fcli);
     }
 
