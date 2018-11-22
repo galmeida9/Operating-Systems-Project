@@ -17,7 +17,8 @@ void apanhaCTRLC(int sig){
 
 int main(int argc, char** argv){
     int fcli, fserv;
-    char buffer[BUF], *buffer2;
+    char buffer[BUF], path[BUF];
+	strcpy(path, CLI); 
 
     if (argc!=2){
         printf("Falta o argumento da pipe do servidor\n");
@@ -39,10 +40,10 @@ int main(int argc, char** argv){
     }
 
     while (1){
-        fgets(buffer, BUF, stdin);
-        buffer2 = strtok(buffer, "\n");
-        write(fserv, CLI, strlen(CLI));
-        write(fserv, buffer2, BUF);
+		printf("teste\n");
+        write(fserv, path, strlen(path));
+        write(fserv, "run boas\0", 5);
+		getchar();
         /*if ((fcli = open(CLI, O_RDONLY)) <0){
             printf("Erro ao abrir PIPE do cliente1\n");
             exit(-1);
