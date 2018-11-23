@@ -239,6 +239,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
+	char *completed = "Circuit Completed.\0";
     while (1) {
         int pid, status;
 		for (int i = 0; i < processes_run; i++) {
@@ -255,8 +256,12 @@ void waitForChild(vector_t *children) {
         	}
 			for (int i = 0; i < vector_getSize(children); ++i) {
 				child_t *child = vector_at(children, i);
-				if((child->pid) == pid)
-					child->status = status;		
+				if((child->pid) == pid) {
+					child->status = status;
+					printf("%d\n", child->status);
+					write(child->fcli, completed, strlen(completed)+1);
+					break;
+				}		
 			}
 		}
         return;
