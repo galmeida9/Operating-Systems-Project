@@ -7,7 +7,7 @@
 typedef struct {
     pid_t pid;
     int status;
-	int fcli;
+	char *pathPipe;
 } child_t;
 
 void waitForChild(vector_t *children);
