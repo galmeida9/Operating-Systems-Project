@@ -26,7 +26,10 @@
 
 #define MAXARGS 3
 #define BUFFER_SIZE 1024
+#define FCLI_SZ 10
 
+int fcli_ptr = 0;
+vector_t *children;
 
 void childTime(int sig);
 int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize);
@@ -42,17 +45,16 @@ int main (int argc, char** argv) {
 	char msg_serv[] = "Starting SERVER pipe.\n",
 		 msg_wait[] = "Wainting for results.\n",
 		 msg_recv[] = "Message Received.\n";
-    int MAXCHILDREN = -1, fserv, fcli, maxFD, result, n, j;
+    int MAXCHILDREN = -1, fserv, fcli[FCLI_SZ], maxFD, result, n, j;
     int runningChildren = 0;
 	fd_set readset;
-	vector_t *children;
 
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
     }
-
-    children = vector_alloc(MAXCHILDREN);
+	
+	children = vector_alloc(MAXCHILDREN);
 
     unlink(SERVER_PATH);
 
@@ -75,8 +77,8 @@ int main (int argc, char** argv) {
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
-	/*signal(SIGCHLD, childTime);*/
 	signal(SIGPIPE, NULL);
+	signal(SIGCHLD, childTime);
 
     while (1) {
         int numArgs;
@@ -93,15 +95,14 @@ int main (int argc, char** argv) {
 			if (FD_ISSET(fserv, &readset)){
 				read(fserv, pathPipe, BUFFER_SIZE);
 				/*	printf("%s\n", pathPipe);*/
-				if((fcli = open(pathPipe, O_WRONLY)) < 0 ){
+				if((fcli[fcli_ptr] = open(pathPipe, O_WRONLY)) < 0 ){
 					printf("Erro ao abrir pipe do cliente.\n");
 					exit(-1);
 				}
-				write(fcli, msg_recv, strlen(msg_recv)+1);
+				write(fcli[fcli_ptr], msg_recv, strlen(msg_recv)+1);
 				read(fserv, buffer, BUFFER_SIZE);																	
-				write(fcli, msg_recv, strlen(msg_recv)+1);
+				write(fcli[fcli_ptr], msg_recv, strlen(msg_recv)+1);
 				/*printf("%s\n", buffer);*/
-				close(fcli);
 			}
 		}
 		FD_SET(fserv, &readset);
@@ -145,6 +146,14 @@ int main (int argc, char** argv) {
 
             if (pid > 0) {
                 runningChildren++;
+        		child_t *child = malloc(sizeof(child_t));
+        		if (child == NULL) {
+            		perror("Error allocating memory");
+            		exit(EXIT_FAILURE);
+        		}
+				child->fcli = fcli[fcli_ptr];
+				child->pid = pid;
+        		vector_pushBack(children, child);
                 printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
                 continue;
             } else {
@@ -163,8 +172,12 @@ int main (int argc, char** argv) {
         }
         else
             printf("Unknown command. Try again.\n");
+		fcli_ptr++;
 
     }
+
+	for (int i = 0; i < FCLI_SZ; i++)
+		close(fcli[i]);
 
     for (int i = 0; i < vector_getSize(children); i++) {
         free(vector_at(children, i));
@@ -179,10 +192,20 @@ int main (int argc, char** argv) {
 void childTime(int sig){
 	pid_t pid;
 	int status;
+	char *completed = "Circuit Completed.\0";
 	pid = waitpid(-1, &status, WNOHANG);
 	printf("teste\n");
 	if (WIFEXITED(status)){
 		printf("pid=%d\n", pid);
+	}
+	for (int i = 0; i < vector_getSize(children); ++i) {
+		child_t *child = vector_at(children, i);
+		if((child->pid) == pid) {
+			child->status = status;
+			printf("%d\n", child->status);
+			write(child->fcli, completed, strlen(completed)+1);
+			break;
+		}		
 	}
 	signal(SIGCHLD, childTime);
 }
@@ -215,24 +238,23 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 
 void waitForChild(vector_t *children) {
     while (1) {
-        child_t *child = malloc(sizeof(child_t));
-        if (child == NULL) {
-            perror("Error allocating memory");
-            exit(EXIT_FAILURE);
-        }
-        child->pid = wait(&(child->status));
-        if (child->pid < 0) {
+        int pid, status;
+		pid = wait(&status);
+        if (pid < 0) {
             if (errno == EINTR) {
                 /* Este codigo de erro significa que chegou signal que interrompeu a espera
                    pela terminacao de filho; logo voltamos a esperar */
-                free(child);
                 continue;
             } else {
                 perror("Unexpected error while waiting for child.");
                 exit (EXIT_FAILURE);
             }
         }
-        vector_pushBack(children, child);
+		for (int i = 0; i < vector_getSize(children); ++i) {
+			child_t *child = vector_at(children, i);
+			if((child->pid) == pid)
+				child->status = status;		
+		}
         return;
     }
 }

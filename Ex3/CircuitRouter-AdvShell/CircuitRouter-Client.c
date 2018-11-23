@@ -49,6 +49,8 @@ int main(int argc, char** argv){
 		write(fserv, buffer, strlen(buffer)+1);
 		read(fcli, buffer_aux, BUF);
 		printf("%s", buffer_aux);
+		read(fcli, buffer_aux, BUF);
+		printf("%s\n", buffer_aux);
 		close(fcli);
     }
 
