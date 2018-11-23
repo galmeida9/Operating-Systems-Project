@@ -189,6 +189,8 @@ int main (int argc, char** argv) {
     }
 
     for (int i = 0; i < vector_getSize(children); i++) {
+        child_t *child = vector_at(children, i);
+        free(child->pathPipe);
         free(vector_at(children, i));
     }
     
