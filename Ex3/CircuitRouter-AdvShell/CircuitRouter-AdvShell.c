@@ -303,7 +303,7 @@ void printChildren(vector_t *children) {
             if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                 ret = "OK";
             }
-            printf("CHILD EXITED: (PID=%d; return %s; %f s)\n", pid, ret, TIMER_DIFF_SECONDS(child->start_time, child->stop_time));
+            printf("CHILD EXITED: (PID=%d; return %s; %.2f s)\n", pid, ret, TIMER_DIFF_SECONDS(child->start_time, child->stop_time));
         }
     }
     puts("END.");
