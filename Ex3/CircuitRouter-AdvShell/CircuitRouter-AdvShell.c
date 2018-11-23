@@ -46,7 +46,7 @@ int main (int argc, char** argv) {
 		 msg_wait[] = "Wainting for results.\n",
 		 msg_recv[] = "Message Received.\n",
 		 *commandNotSupported = "Command not supported.\0";
-    int MAXCHILDREN = -1, fserv, fcli[FCLI_SZ], maxFD, result, n, j;
+    int MAXCHILDREN = -1, fserv, fcli[FCLI_SZ], maxFD, result;
     int runningChildren = 0;
 	fd_set readset;
 
