@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include "lib/timer.h"
 
 #define COMMAND_EXIT "exit"
 #define COMMAND_RUN "run"
@@ -155,6 +156,9 @@ int main (int argc, char** argv) {
         	    }
                 child->pathPipe = strdup(pathPipe);
                 child->pid = pid;
+                TIMER_T startTime;
+                TIMER_READ(startTime);
+                child->start_time = startTime;
         	    vector_pushBack(children, child);
 		        processes_run++;
                 printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
@@ -196,7 +200,9 @@ int main (int argc, char** argv) {
 /**/
 
 void childTime(int sig){
-	pid_t pid;
+	TIMER_T stopTime;
+    TIMER_READ(stopTime);
+    pid_t pid;
 	int status, fcli;
 	char *completed = "Circuit solved\0";
 	pid = waitpid(-1, &status, WNOHANG);
@@ -204,6 +210,7 @@ void childTime(int sig){
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
 			child->status = status;
+            child->stop_time = stopTime;
             if (strcmp(child->pathPipe, "") == 0)
                 printf("%s\n", completed);
             else {
@@ -251,6 +258,8 @@ void waitForChild(vector_t *children) {
     while (1) {
         int pid, status, fcli_open;
 		for (int i = 0; i < processes_run; i++) {
+	        TIMER_T stopTime;
+            TIMER_READ(stopTime);
 			pid = wait(&status);
         	if (pid < 0) {
             	if (errno == EINTR) {
@@ -266,7 +275,7 @@ void waitForChild(vector_t *children) {
 				child_t *child = vector_at(children, i);
 				if((child->pid) == pid) {
 					child->status = status;
-					printf("%d\n", child->status);
+                    child->stop_time = stopTime;
                     if (strcmp(child->pathPipe, "") == 0)
                         printf("%s\n", completed);
                     else {
@@ -294,7 +303,7 @@ void printChildren(vector_t *children) {
             if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                 ret = "OK";
             }
-            printf("CHILD EXITED: (PID=%d; return %s)\n", pid, ret);
+            printf("CHILD EXITED: (PID=%d; return %s; %f s)\n", pid, ret, TIMER_DIFF_SECONDS(child->start_time, child->stop_time));
         }
     }
     puts("END.");
