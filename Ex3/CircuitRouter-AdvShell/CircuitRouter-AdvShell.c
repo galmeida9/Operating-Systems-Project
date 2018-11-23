@@ -28,7 +28,7 @@
 #define BUFFER_SIZE 1024
 #define FCLI_SZ 10
 
-int fcli_ptr = 0;
+int fcli_ptr = 0, processes_run = 0;
 vector_t *children;
 
 void childTime(int sig);
@@ -154,6 +154,7 @@ int main (int argc, char** argv) {
 				child->fcli = fcli[fcli_ptr];
 				child->pid = pid;
         		vector_pushBack(children, child);
+				processes_run++;
                 printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
                 continue;
             } else {
@@ -207,6 +208,7 @@ void childTime(int sig){
 			break;
 		}		
 	}
+	processes_run--;
 	signal(SIGCHLD, childTime);
 }
 
@@ -239,21 +241,23 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 void waitForChild(vector_t *children) {
     while (1) {
         int pid, status;
-		pid = wait(&status);
-        if (pid < 0) {
-            if (errno == EINTR) {
-                /* Este codigo de erro significa que chegou signal que interrompeu a espera
-                   pela terminacao de filho; logo voltamos a esperar */
-                continue;
-            } else {
-                perror("Unexpected error while waiting for child.");
-                exit (EXIT_FAILURE);
-            }
-        }
-		for (int i = 0; i < vector_getSize(children); ++i) {
-			child_t *child = vector_at(children, i);
-			if((child->pid) == pid)
-				child->status = status;		
+		for (int i = 0; i < processes_run; i++) {
+			pid = wait(&status);
+        	if (pid < 0) {
+            	if (errno == EINTR) {
+                	/* Este codigo de erro significa que chegou signal que interrompeu a espera
+                   	pela terminacao de filho; logo voltamos a esperar */
+                	continue;
+            	} else {
+                	perror("Unexpected error while waiting for child.");
+                	exit (EXIT_FAILURE);
+            	}
+        	}
+			for (int i = 0; i < vector_getSize(children); ++i) {
+				child_t *child = vector_at(children, i);
+				if((child->pid) == pid)
+					child->status = status;		
+			}
 		}
         return;
     }
