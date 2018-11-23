@@ -44,7 +44,8 @@ int main (int argc, char** argv) {
     char pathPipe[BUFFER_SIZE];
 	char msg_serv[] = "Starting SERVER pipe.\n",
 		 msg_wait[] = "Wainting for results.\n",
-		 msg_recv[] = "Message Received.\n";
+		 msg_recv[] = "Message Received.\n",
+		 *commandNotSupported = "Command not supported.\0";
     int MAXCHILDREN = -1, fserv, fcli[FCLI_SZ], maxFD, result, n, j;
     int runningChildren = 0;
 	fd_set readset;
@@ -171,8 +172,12 @@ int main (int argc, char** argv) {
             /* Nenhum argumento; ignora e volta a pedir */
             continue;
         }
+		
+		else if (strcmp(pathPipe, "") != 0)
+			write(fcli[fcli_ptr], commandNotSupported, strlen(commandNotSupported)+1);
+
         else
-            printf("Unknown command. Try again.\n");
+            printf("%s\n", commandNotSupported);
 		fcli_ptr++;
 
     }
@@ -193,7 +198,7 @@ int main (int argc, char** argv) {
 void childTime(int sig){
 	pid_t pid;
 	int status;
-	char *completed = "Circuit Completed.\0";
+	char *completed = "Circuit solved\0";
 	pid = waitpid(-1, &status, WNOHANG);
 	printf("teste\n");
 	if (WIFEXITED(status)){
@@ -239,7 +244,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	char *completed = "Circuit Completed.\0";
+	char *completed = "Circuit solved\0";
     while (1) {
         int pid, status;
 		for (int i = 0; i < processes_run; i++) {
