@@ -26,7 +26,6 @@
 
 #define MAXARGS 3
 #define BUFFER_SIZE 1024
-#define FCLI_SZ 10
 
 int processes_run = 0;
 vector_t *children;
@@ -106,11 +105,13 @@ int main (int argc, char** argv) {
 				/*printf("%s\n", buffer);*/
 			}
 		}
-		FD_SET(fserv, &readset);
+		
+        FD_SET(fserv, &readset);
 		FD_SET(fileno(stdin), &readset);
 
+        if (strcmp(pathPipe, "") != 0)
+		    printf("%s\n", buffer);
         numArgs = parseArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
-		printf("%s\n", buffer);
         /* EOF (end of file) do stdin ou comando "sair" */
         if (numArgs < 0 || (numArgs > 0 && (strcmp(pathPipe, "")==0) && (strcmp(args[0], COMMAND_EXIT) == 0))) {
             printf("CircuitRouter-AdvShell will exit.\n--\n");
@@ -153,7 +154,6 @@ int main (int argc, char** argv) {
             		exit(EXIT_FAILURE);
         	    }
                 child->pathPipe = strdup(pathPipe);
-                printf("%s\n", child->pathPipe);
                 child->pid = pid;
         	    vector_pushBack(children, child);
 		        processes_run++;
@@ -200,20 +200,19 @@ void childTime(int sig){
 	int status, fcli;
 	char *completed = "Circuit solved\0";
 	pid = waitpid(-1, &status, WNOHANG);
-	printf("teste\n");
-	if (WIFEXITED(status)){
-		printf("pid=%d\n", pid);
-	}
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
 			child->status = status;
-			printf("%d\n", child->status);
-            if ((fcli = open(child->pathPipe, O_WRONLY)) < 0) {
-                printf("Erro ao abrir pipe do cliente.\n");
-                exit(-1);
+            if (strcmp(child->pathPipe, "") == 0)
+                printf("%s\n", completed);
+            else {
+                if ((fcli = open(child->pathPipe, O_WRONLY)) < 0) {
+                    printf("Erro ao abrir pipe do cliente.\n");
+                    exit(-1);
+                }
+                write(fcli, completed, strlen(completed)+1);
             }
-			write(fcli, completed, strlen(completed)+1);
 			break;
 		}		
 	}
@@ -268,12 +267,16 @@ void waitForChild(vector_t *children) {
 				if((child->pid) == pid) {
 					child->status = status;
 					printf("%d\n", child->status);
-                    if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
-                        printf("Erro ao abrir pipe do cliente.\n");
-                        exit(-1);
-                    }
-					write(fcli_open, completed, strlen(completed)+1);
-					break;
+                    if (strcmp(child->pathPipe, "") == 0)
+                        printf("%s\n", completed);
+                    else {
+                        if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
+                            printf("Erro ao abrir pipe do cliente.\n");
+                            exit(-1);
+                        }
+                        write(fcli_open, completed, strlen(completed)+1);
+					}
+                    break;
 				}		
 			}
 		}
