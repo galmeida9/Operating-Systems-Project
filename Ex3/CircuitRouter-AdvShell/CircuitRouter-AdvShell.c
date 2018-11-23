@@ -93,9 +93,13 @@ int main (int argc, char** argv) {
 			if (FD_ISSET(fserv, &readset)){
 				read(fserv, pathPipe, BUFFER_SIZE);
 				/*	printf("%s\n", pathPipe);*/
-				fcli = open(pathPipe, O_WRONLY);
+				if((fcli = open(pathPipe, O_WRONLY)) < 0 ){
+					printf("Erro ao abrir pipe do cliente.\n");
+					exit(-1);
+				}
 				write(fcli, msg_recv, strlen(msg_recv)+1);
-				read(fserv, buffer, BUFFER_SIZE);																	write(fcli, msg_recv, strlen(msg_recv)+1);
+				read(fserv, buffer, BUFFER_SIZE);																	
+				write(fcli, msg_recv, strlen(msg_recv)+1);
 				/*printf("%s\n", buffer);*/
 				close(fcli);
 			}

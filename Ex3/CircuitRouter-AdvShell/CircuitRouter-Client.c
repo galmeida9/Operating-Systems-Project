@@ -10,17 +10,6 @@
 #define CLI "/tmp/client1.pipe"
 #define BUF 1024
 
-void leComando(char* ptr, int size){
-	char c;
-	int i=0, j;
-	for (j=0; j<size; j++) ptr[j] = '\0';
-	while ((c=getchar())!='\n' && i<(size+1)){
-		ptr[i++] = c;
-	}
-	ptr[i++] = '\n';
-	ptr[i] = '\0';
-}
-
 void apanhaCTRLC(int sig){
     unlink(CLI);
     exit(0);
@@ -51,7 +40,7 @@ int main(int argc, char** argv){
     }
 
     while (1){
-		leComando(buffer, BUF);
+		read(0, buffer, BUF);
 		/*if (strcmp(buffer, "exit\n")==0) break;*/
         write(fserv, path, strlen(path)+1);
 		fcli = open(path, O_RDONLY);
