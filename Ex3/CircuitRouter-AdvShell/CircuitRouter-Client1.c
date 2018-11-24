@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define CLI "/tmp/client.pipe\0"
+#define CLI "/tmp/client\0"
 #define BUF 1024
 
 void apanhaCTRLC(int sig){
@@ -17,11 +17,12 @@ void apanhaCTRLC(int sig){
 
 int main(int argc, char** argv){
     int fcli, fserv, n, pid;
-    char buffer[BUF], path[BUF], buffer_aux[BUF], pidNumber[24];
+    char buffer[BUF], path[BUF], buffer_aux[BUF], pidNumber[24], *extention = ".pipe\0";
 	strcpy(path, CLI);
     pid = getpid();
     sprintf(pidNumber, "%d", pid);
     strcat(path, pidNumber);
+    strcat(path, extention);
     
     if (argc!=2){
         printf("Falta o argumento da pipe do servidor\n");
