@@ -20,8 +20,7 @@ CircuitRouter-AdvShell.o: CircuitRouter-AdvShell.c CircuitRouter-AdvShell.h ../l
 
 $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
-	$(CC) $(CFLAGS) -o CircuitRouter-Client1 CircuitRouter-Client1.c
-	$(CC) $(CFLAGS) -o CircuitRouter-Client2 CircuitRouter-Client2.c
+	$(CC) $(CFLAGS) -o CircuitRouter-Client CircuitRouter-Client.c
 
 clean:
 	@echo Cleaning AdvShell...
