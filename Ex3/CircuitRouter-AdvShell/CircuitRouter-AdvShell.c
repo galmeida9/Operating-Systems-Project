@@ -45,7 +45,7 @@ int main (int argc, char** argv) {
 	char msg_serv[] = "Starting SERVER pipe.\n",
 		 msg_wait[] = "Wainting for results.\n",
 		 msg_recv[] = "Message Received.\n",
-		 *commandNotSupported = "Command not supported.\0";
+		 *commandNotSupported = "Command not supported.\n\0";
     int MAXCHILDREN = -1, fserv, fcli, maxFD, result;
     int runningChildren = 0;
 	fd_set readset;
@@ -182,7 +182,7 @@ int main (int argc, char** argv) {
 			write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
 
         else
-            printf("%s\n", commandNotSupported);
+            printf("%s", commandNotSupported);
 
         close(fcli);
 
@@ -206,21 +206,28 @@ void childTime(int sig){
     TIMER_READ(stopTime);
     pid_t pid;
 	int status, fcli;
-	char *completed = "Circuit solved\0";
+	char *completed = "Circuit solved\n\0", *notCompleted = "Circuit not solved\n\0";
 	pid = waitpid(-1, &status, WNOHANG);
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
 			child->status = status;
             child->stop_time = stopTime;
-            if (strcmp(child->pathPipe, "") == 0)
-                printf("%s\n", completed);
+            if (strcmp(child->pathPipe, "") == 0) {
+                if (status == 0)
+                    write(1, completed, strlen(completed));
+                else
+                    write(1, notCompleted, strlen(notCompleted));
+            }
             else {
                 if ((fcli = open(child->pathPipe, O_WRONLY)) < 0) {
                     printf("Erro ao abrir pipe do cliente.\n");
                     exit(-1);
                 }
-                write(fcli, completed, strlen(completed)+1);
+                if (status == 0)
+                    write(fcli, completed, strlen(completed)+1);
+                else
+                    write(fcli, notCompleted, strlen(notCompleted)+1);
             }
 			break;
 		}		
@@ -256,7 +263,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	char *completed = "Circuit solved\0";
+	char *completed = "Circuit solved\n\0", *notCompleted = "Circuit not solved\n\0";
     while (1) {
         int pid, status, fcli_open;
 		for (int i = 0; i < processes_run; i++) {
@@ -278,14 +285,21 @@ void waitForChild(vector_t *children) {
 				if((child->pid) == pid) {
 					child->status = status;
                     child->stop_time = stopTime;
-                    if (strcmp(child->pathPipe, "") == 0)
-                        printf("%s\n", completed);
+                    if (strcmp(child->pathPipe, "") == 0) {
+                        if (status == 0)
+                            printf("%s", completed);
+                        else
+                            printf("%s", notCompleted);
+                    }
                     else {
                         if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
                             printf("Erro ao abrir pipe do cliente.\n");
                             exit(-1);
                         }
-                        write(fcli_open, completed, strlen(completed)+1);
+                        if (status == 0)
+                            write(fcli_open, completed, strlen(completed)+1);
+                        else 
+                            write(fcli_open, notCompleted, strlen(notCompleted)+1);
 					}
                     break;
 				}		

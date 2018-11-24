@@ -54,7 +54,7 @@ int main(int argc, char** argv){
 		read(fcli, buffer_aux, BUF);
 		printf("%s", buffer_aux);
 		read(fcli, buffer_aux, BUF);
-		printf("%s\n", buffer_aux);
+		write(1, buffer_aux, strlen(buffer_aux));
 		close(fcli);
     }
 
