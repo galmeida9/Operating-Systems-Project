@@ -202,12 +202,12 @@ int main (int argc, char** argv) {
 /**/
 
 void childTime(int sig){
-	TIMER_T stopTime;
-	TIMER_READ(stopTime);
 	pid_t pid;
 	int status, fcli, outFd;
 	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
 	pid = waitpid(-1, &status, WNOHANG);
+	TIMER_T stopTime;
+	TIMER_READ(stopTime);
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
@@ -265,9 +265,9 @@ void waitForChild(vector_t *children) {
 	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
 	int pid, status, fcli_open, outFd=fileno(stdout);
 	for (int i = 0; i < processes_run; i++) {
+		pid = wait(&status);
 		TIMER_T stopTime;
 		TIMER_READ(stopTime);
-		pid = wait(&status);
 		if (pid < 0) {
 			if (errno == EINTR) {
 				/* Este codigo de erro significa que chegou signal que interrompeu a espera
