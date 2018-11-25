@@ -1,5 +1,4 @@
 # SO-Project
 
 
-#DANI NAO FACAS MERDA
-#o gabi já fez merda, não funciona....
+O gabi não sabe ser limpo, gosta de lixo no seu ambiente....
