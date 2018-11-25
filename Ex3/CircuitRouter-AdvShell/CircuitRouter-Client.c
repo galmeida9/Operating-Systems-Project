@@ -49,9 +49,13 @@ int main(int argc, char** argv){
     }
 
     while (1){
-		n = read(0, buffer, BUF-1);
-		buffer[n] = '\0';
-		/*if (strcmp(buffer, "exit\n")==0) break;*/
+		/*n = read(0, buffer, BUF-1);
+		buffer[n] = '\0';*/
+		fgets(buffer, BUF-2, stdin);
+		buffer[BUF-2] = '\n';
+		buffer[BUF-1] = '\0';
+
+		if (strcmp(buffer, "leave\n")==0) break;
         write(fserv, path, strlen(path)+1);
 		fcli = open(path, O_RDONLY);
 		read(fcli, buffer_aux, BUF);
