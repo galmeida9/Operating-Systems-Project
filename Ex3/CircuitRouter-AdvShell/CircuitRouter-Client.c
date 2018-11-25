@@ -7,17 +7,22 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define CLI "/tmp/client\0"
+#define CLI "/tmp/client"
 #define BUF 1024
 
+int fcli, fserv;
+char path[BUF];
+
 void apanhaCTRLC(int sig){
-    unlink(CLI);
+	close(fserv);
+	close(fcli);
+    unlink(path);
     exit(0);
 }
 
 int main(int argc, char** argv){
-    int fcli, fserv, n, pid;
-    char buffer[BUF], path[BUF], buffer_aux[BUF], pidNumber[24], *extention = ".pipe\0";
+    int n, pid;
+    char buffer[BUF], buffer_aux[BUF], pidNumber[24], *extention = ".pipe";
 	strcpy(path, CLI);
     pid = getpid();
     sprintf(pidNumber, "%d", pid);
