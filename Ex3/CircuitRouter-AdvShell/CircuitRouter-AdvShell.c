@@ -202,11 +202,11 @@ int main (int argc, char** argv) {
 /**/
 
 void childTime(int sig){
-	TIMER_T stopTime;
-	TIMER_READ(stopTime);
 	pid_t pid;
 	int status;
 	pid = waitpid(-1, &status, WNOHANG);
+	TIMER_T stopTime;
+	TIMER_READ(stopTime);
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
