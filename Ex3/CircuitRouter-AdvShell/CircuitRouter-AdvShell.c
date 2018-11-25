@@ -265,8 +265,6 @@ void waitForChild(vector_t *children) {
 	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
 	int pid, status, fcli_open, outFd=fileno(stdout);
 	for (int i = 0; i < processes_run; i++) {
-		TIMER_T stopTime;
-		TIMER_READ(stopTime);
 		pid = wait(&status);
 		if (pid < 0) {
 			if (errno == EINTR) {
@@ -282,6 +280,8 @@ void waitForChild(vector_t *children) {
 			child_t *child = vector_at(children, i);
 			if((child->pid) == pid) {
 				child->status = status;
+		        TIMER_T stopTime;
+		        TIMER_READ(stopTime);
 				child->stop_time = stopTime;
 				if (strcmp(child->pathPipe, "") != 0){
 					if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
