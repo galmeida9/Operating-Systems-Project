@@ -266,6 +266,8 @@ void waitForChild(vector_t *children) {
 	int pid, status, fcli_open, outFd=fileno(stdout);
 	for (int i = 0; i < processes_run; i++) {
 		pid = wait(&status);
+		TIMER_T stopTime;
+		TIMER_READ(stopTime);
 		if (pid < 0) {
 			if (errno == EINTR) {
 				/* Este codigo de erro significa que chegou signal que interrompeu a espera
@@ -280,8 +282,6 @@ void waitForChild(vector_t *children) {
 			child_t *child = vector_at(children, i);
 			if((child->pid) == pid) {
 				child->status = status;
-		        TIMER_T stopTime;
-		        TIMER_READ(stopTime);
 				child->stop_time = stopTime;
 				if (strcmp(child->pathPipe, "") != 0){
 					if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
