@@ -46,7 +46,7 @@ int main(int argc, char** argv){
     while (1){
 		n = read(0, buffer, BUF-1);
 		buffer[n] = '\0';
-		if (strcmp(buffer, "exit\n")==0) break;
+		/*if (strcmp(buffer, "exit\n")==0) break;*/
         write(fserv, path, strlen(path)+1);
 		fcli = open(path, O_RDONLY);
 		read(fcli, buffer_aux, BUF);

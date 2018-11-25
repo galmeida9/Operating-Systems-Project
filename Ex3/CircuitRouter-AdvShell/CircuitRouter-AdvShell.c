@@ -42,10 +42,10 @@ int main (int argc, char** argv) {
     char *args[MAXARGS + 1];
     char buffer[BUFFER_SIZE];
     char pathPipe[BUFFER_SIZE];
-	char msg_serv[] = "Starting SERVER pipe.\n",
-		 msg_wait[] = "Wainting for results.\n",
-		 msg_recv[] = "Message Received.\n",
-		 *commandNotSupported = "Command not supported.\n\0";
+	char *msg_serv = "Starting SERVER pipe.\n",
+		 *msg_wait = "Wainting for results.\n",
+		 *msg_recv = "Message Received.\n",
+		 *commandNotSupported = "Command not supported.\n";
     int MAXCHILDREN = -1, fserv, fcli, maxFD, result;
     int runningChildren = 0;
 	fd_set readset;
@@ -78,11 +78,11 @@ int main (int argc, char** argv) {
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
-	signal(SIGPIPE, NULL);
+
 	signal(SIGCHLD, childTime);
 
     while (1) {
-        int numArgs;
+        int numArgs, hasClient=0;
 		strcpy(pathPipe, "");
 		pathPipe[0] = '\0';
 		buffer[0] = '\0';
@@ -104,17 +104,17 @@ int main (int argc, char** argv) {
 				read(fserv, buffer, BUFFER_SIZE);																	
 				write(fcli, msg_recv, strlen(msg_recv)+1);
 				/*printf("%s\n", buffer);*/
+				hasClient=1;
 			}
 		}
 		
         FD_SET(fserv, &readset);
 		FD_SET(fileno(stdin), &readset);
 
-        if (strcmp(pathPipe, "") != 0)
-		    printf("%s\n", buffer);
+        if (hasClient==1) printf("%s\n", buffer);
         numArgs = parseArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
         /* EOF (end of file) do stdin ou comando "sair" */
-        if (numArgs < 0 || (numArgs > 0 && (strcmp(pathPipe, "")==0) && (strcmp(args[0], COMMAND_EXIT) == 0))) {
+        if (numArgs < 0 || (numArgs > 0 && (hasClient==0) && (strcmp(args[0], COMMAND_EXIT) == 0))) {
             printf("CircuitRouter-AdvShell will exit.\n--\n");
 
             /* Espera pela terminacao de cada filho */
@@ -125,8 +125,8 @@ int main (int argc, char** argv) {
 
             printChildren(children);
             printf("--\nCircuitRouter-AdvShell ended.\n");
-			/*close(fserv);
-			unlink(SERVER_PATH);*/
+			close(fserv);
+			unlink(SERVER_PATH);
             break;
         }
 
@@ -178,7 +178,7 @@ int main (int argc, char** argv) {
             continue;
         }
 		
-		else if (strcmp(pathPipe, "") != 0)
+		else if (hasClient == 1)
 			write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
 
         else
@@ -205,30 +205,29 @@ void childTime(int sig){
 	TIMER_T stopTime;
     TIMER_READ(stopTime);
     pid_t pid;
-	int status, fcli;
-	char *completed = "Circuit solved\n\0", *notCompleted = "Circuit not solved\n\0";
+	int status, fcli, outFd;
+	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
 	pid = waitpid(-1, &status, WNOHANG);
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
 			child->status = status;
             child->stop_time = stopTime;
-            if (strcmp(child->pathPipe, "") == 0) {
-                if (status == 0)
-                    write(1, completed, strlen(completed));
-                else
-                    write(1, notCompleted, strlen(notCompleted));
-            }
-            else {
+			if (strcmp(child->pathPipe, "") == 0){
+				outFd = fileno(stdout);
+			}
+			else{
                 if ((fcli = open(child->pathPipe, O_WRONLY)) < 0) {
                     printf("Erro ao abrir pipe do cliente.\n");
                     exit(-1);
-                }
-                if (status == 0)
-                    write(fcli, completed, strlen(completed)+1);
-                else
-                    write(fcli, notCompleted, strlen(notCompleted)+1);
-            }
+				}
+				outFd = fcli;
+			}
+            if (status == 0)
+            	write(outFd, completed, strlen(completed)+1);
+            else
+            	write(outFd, notCompleted, strlen(notCompleted)+1);
+			if (outFd!=fileno(stdout)) close(fcli);
 			break;
 		}		
 	}
@@ -263,50 +262,44 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	char *completed = "Circuit solved\n\0", *notCompleted = "Circuit not solved\n\0";
-    while (1) {
-        int pid, status, fcli_open;
-		for (int i = 0; i < processes_run; i++) {
-	        TIMER_T stopTime;
-            TIMER_READ(stopTime);
-			pid = wait(&status);
-        	if (pid < 0) {
-            	if (errno == EINTR) {
-                	/* Este codigo de erro significa que chegou signal que interrompeu a espera
-                   	pela terminacao de filho; logo voltamos a esperar */
-                	continue;
-            	} else {
-                	perror("Unexpected error while waiting for child.");
-                	exit (EXIT_FAILURE);
-            	}
-        	}
-			for (int i = 0; i < vector_getSize(children); ++i) {
-				child_t *child = vector_at(children, i);
-				if((child->pid) == pid) {
-					child->status = status;
-                    child->stop_time = stopTime;
-                    if (strcmp(child->pathPipe, "") == 0) {
-                        if (status == 0)
-                            printf("%s", completed);
-                        else
-                            printf("%s", notCompleted);
+	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
+    int pid, status, fcli_open, outFd=fileno(stdout);
+	for (int i = 0; i < processes_run; i++) {
+		TIMER_T stopTime;
+		TIMER_READ(stopTime);
+		pid = wait(&status);
+        if (pid < 0) {
+            if (errno == EINTR) {
+                /* Este codigo de erro significa que chegou signal que interrompeu a espera
+                pela terminacao de filho; logo voltamos a esperar */
+                continue;
+            } else {
+                perror("Unexpected error while waiting for child.");
+                exit (EXIT_FAILURE);
+            }
+        }
+		for (int i = 0; i < vector_getSize(children); ++i) {
+			child_t *child = vector_at(children, i);
+			if((child->pid) == pid) {
+				child->status = status;
+				child->stop_time = stopTime;
+				if (strcmp(child->pathPipe, "") != 0){
+					if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
+						printf("Erro ao abrir pipe do cliente.\n");
+                    	exit(-1);
                     }
-                    else {
-                        if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
-                            printf("Erro ao abrir pipe do cliente.\n");
-                            exit(-1);
-                        }
-                        if (status == 0)
-                            write(fcli_open, completed, strlen(completed)+1);
-                        else 
-                            write(fcli_open, notCompleted, strlen(notCompleted)+1);
-					}
-                    break;
-				}		
-			}
+					outFd = fcli_open;
+				}
+                if (status == 0)
+                	write(outFd, completed, strlen(completed)+1);
+				else
+                	write(outFd, notCompleted, strlen(notCompleted)+1);
+				if (outFd != fileno(stdout)) close(fcli_open);
+            	break;
+			}		
 		}
-        return;
-    }
+	}
+	return;
 }
 
 void printChildren(vector_t *children) {
