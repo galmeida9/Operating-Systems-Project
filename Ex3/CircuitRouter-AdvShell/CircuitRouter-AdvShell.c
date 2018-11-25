@@ -91,7 +91,7 @@ int main (int argc, char** argv) {
 		if (result == -1) continue;
 		else if (result){
 			if (FD_ISSET(fileno(stdin), &readset)){
-				fgets(buffer, BUFFER_SIZE, stdin);
+                fgets(buffer, BUFFER_SIZE, stdin);
 			}
 			if (FD_ISSET(fserv, &readset)){
 				read(fserv, pathPipe, BUFFER_SIZE);
@@ -165,7 +165,7 @@ int main (int argc, char** argv) {
 				continue;
 			} else {
 				char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-				char *newArgs[3] = {seqsolver, args[1], NULL};
+				char *newArgs[4] = {seqsolver, args[1], pathPipe, NULL};
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
@@ -205,29 +205,13 @@ void childTime(int sig){
 	TIMER_T stopTime;
 	TIMER_READ(stopTime);
 	pid_t pid;
-	int status, fcli, outFd;
-	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
+	int status;
 	pid = waitpid(-1, &status, WNOHANG);
 	for (int i = 0; i < vector_getSize(children); ++i) {
 		child_t *child = vector_at(children, i);
 		if((child->pid) == pid) {
 			child->status = status;
 			child->stop_time = stopTime;
-			if (strcmp(child->pathPipe, "") == 0){
-				outFd = fileno(stdout);
-			}
-			else{
-				if ((fcli = open(child->pathPipe, O_WRONLY)) < 0) {
-					printf("Erro ao abrir pipe do cliente.\n");
-					exit(-1);
-				}
-				outFd = fcli;
-			}
-			if (status == 0)
-				write(outFd, completed, strlen(completed)+1);
-			else
-				write(outFd, notCompleted, strlen(notCompleted)+1);
-			if (outFd!=fileno(stdout)) close(fcli);
 			break;
 		}		
 	}
@@ -262,8 +246,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	char *completed = "Circuit solved.\n", *notCompleted = "Circuit not solved.\n";
-	int pid, status, fcli_open, outFd=fileno(stdout);
+	int pid, status;
 	for (int i = 0; i < processes_run; i++) {
 		pid = wait(&status);
 		TIMER_T stopTime;
@@ -283,18 +266,6 @@ void waitForChild(vector_t *children) {
 			if((child->pid) == pid) {
 				child->status = status;
 				child->stop_time = stopTime;
-				if (strcmp(child->pathPipe, "") != 0){
-					if ((fcli_open = open(child->pathPipe, O_WRONLY)) < 0) {
-						printf("Erro ao abrir pipe do cliente.\n");
-						exit(-1);
-					}
-					outFd = fcli_open;
-				}
-				if (status == 0)
-					write(outFd, completed, strlen(completed)+1);
-				else
-					write(outFd, notCompleted, strlen(notCompleted)+1);
-				if (outFd != fileno(stdout)) close(fcli_open);
 				break;
 			}		
 		}

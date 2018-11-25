@@ -61,6 +61,7 @@
 #include "lib/list.h"
 #include "maze.h"
 #include "router.h"
+#include <fcntl.h>
 #include "lib/timer.h"
 #include "lib/types.h"
 
@@ -117,6 +118,8 @@ static void setDefaultParams (){
  */
 static void parseArgs (long argc, char* const argv[]){
     long opt;
+    char *pathPipe, *notSolved = "Circuit not solved\n";
+    pathPipe = strdup(argv[2]);
 
     opterr = 0;
 
@@ -146,6 +149,18 @@ static void parseArgs (long argc, char* const argv[]){
     global_inputFile = argv[optind];
 	if (fopen(global_inputFile, "r")==NULL){
         fprintf(stderr, "Error: Could not read %s\n", global_inputFile);
+        if (strcmp(pathPipe, "") == 0)
+            printf("%s", notSolved);
+        else {
+            int fcli;
+            if ((fcli = open(pathPipe, O_WRONLY)) < 0) {
+                printf("Erro ao abrir pipe do cliente.\n");
+                exit(-1);    
+            }   
+            write(fcli, notSolved, strlen(notSolved)+1);
+            close(fcli); 
+        }
+        free(pathPipe);
         exit(EXIT_FAILURE);
 	}
 }
@@ -185,6 +200,8 @@ int main(int argc, char** argv){
     /*
      * Initialization
      */
+    char *pathPipe, *solved = "Circuit solved\n";
+    pathPipe = strdup(argv[2]);
     parseArgs(argc, argv);
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
@@ -242,6 +259,18 @@ int main(int argc, char** argv){
     list_free(pathVectorListPtr);
 
     fclose(resultFp);
+    if (strcmp(pathPipe, "") == 0)
+        printf("%s", solved);
+    else {
+        int fcli;
+        if ((fcli = open(pathPipe, O_WRONLY)) < 0) {
+            printf("Erro ao abrir pipe do cliente.\n");
+            exit(-1);    
+        }   
+        write(fcli, solved, strlen(solved)+1);
+        close(fcli); 
+    }
+    free(pathPipe);
     exit(0);
 }
 
