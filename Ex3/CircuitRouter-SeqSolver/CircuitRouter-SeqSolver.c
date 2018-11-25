@@ -144,6 +144,10 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     global_inputFile = argv[optind];
+	if (fopen(global_inputFile, "r")==NULL){
+        fprintf(stderr, "Error: Could not read %s\n", global_inputFile);
+        exit(EXIT_FAILURE);
+	}
 }
 
 /* =============================================================================
