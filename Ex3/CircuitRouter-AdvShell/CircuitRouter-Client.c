@@ -9,12 +9,11 @@
 #include "CircuitRouter-AdvShell.h"
 
 #define CLI "/tmp/client"
-#define BUF 1024
 
 int fcli, fserv;
-char path[BUF];
+char path[BUFFER_SIZE];
 
-void apanhaCTRLC(int sig){
+void apanhaINT(int sig){
 	close(fserv);
 	close(fcli);
     unlink(path);
@@ -41,12 +40,13 @@ int main(int argc, char** argv){
     strcat(path, pidNumber);
     strcat(path, extention);
     
+    signal(SIGINT, apanhaINT);
+    signal(SIGPIPE, apanhaINT);
+
     if (argc!=2){
         printf("Falta o argumento da pipe do servidor\n");
         exit(-1);
     }
-    
-    signal(SIGINT, apanhaCTRLC);
 
     if ( (fserv = open(argv[1], O_WRONLY))<0){
         printf("Erro ao abrir pipe\n");
@@ -62,20 +62,17 @@ int main(int argc, char** argv){
 
     while (1){
 		msg_protocol msg;
+
 		buffer_aux[0] = '\0';
-		leComando(buffer, BUF);
+		leComando(buffer, BUFFER_SIZE);
 		if (strcmp(buffer, "leave\n")==0) break;
+
 		strcpy(msg.pipe, path);
 		strcpy(msg.command, buffer);
-		/*strcat(buffer_aux, path);
-		strcat(buffer_aux, "@");
-		strcat(buffer_aux, buffer);
-		printf("%s", buffer_aux);*/
 
-        /*write(fserv, buffer_aux, strlen(buffer_aux)+1);*/
 		write(fserv, &msg, sizeof(msg_protocol));
-		fcli = open(path, O_RDONLY);
-		read(fcli, buffer_aux, BUF);
+		if ((fcli = open(path, O_RDONLY))<0) exit(EXIT_FAILURE);
+		if ((read(fcli, buffer_aux, BUFFER_SIZE))<0) exit(EXIT_FAILURE);
 		write(1, buffer_aux, strlen(buffer_aux));
 		close(fcli);
     }
