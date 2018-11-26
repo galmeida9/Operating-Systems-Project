@@ -119,7 +119,9 @@ static void setDefaultParams (){
 static void parseArgs (long argc, char* const argv[]){
     long opt;
     char *pathPipe, *notSolved = "Circuit not solved\n";
-    pathPipe = strdup(argv[2]);
+	
+	if(argc == 3) 
+		pathPipe = strdup(argv[2]);
 
     opterr = 0;
 
@@ -149,7 +151,7 @@ static void parseArgs (long argc, char* const argv[]){
     global_inputFile = argv[optind];
 	if (fopen(global_inputFile, "r")==NULL){
         fprintf(stderr, "Error: Could not read %s\n", global_inputFile);
-        if (strcmp(pathPipe, "") == 0)
+        if (argc != 3)
             printf("%s", notSolved);
         else {
             int fcli;
@@ -158,9 +160,9 @@ static void parseArgs (long argc, char* const argv[]){
                 exit(-1);    
             }   
             write(fcli, notSolved, strlen(notSolved)+1);
+        	free(pathPipe);
             close(fcli); 
         }
-        free(pathPipe);
         exit(EXIT_FAILURE);
 	}
 }
@@ -201,8 +203,11 @@ int main(int argc, char** argv){
      * Initialization
      */
     char *pathPipe, *solved = "Circuit solved\n";
-    pathPipe = strdup(argv[2]);
-    parseArgs(argc, argv);
+	
+	if(argc == 3) 
+		pathPipe = strdup(argv[2]);
+
+	parseArgs(argc, argv);
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
@@ -259,7 +264,7 @@ int main(int argc, char** argv){
     list_free(pathVectorListPtr);
 
     fclose(resultFp);
-    if (strcmp(pathPipe, "") == 0)
+    if (argc != 3)
         printf("%s", solved);
     else {
         int fcli;
@@ -268,9 +273,9 @@ int main(int argc, char** argv){
             exit(-1);    
         }   
         write(fcli, solved, strlen(solved)+1);
+    	free(pathPipe);
         close(fcli); 
     }
-    free(pathPipe);
     exit(0);
 }
 

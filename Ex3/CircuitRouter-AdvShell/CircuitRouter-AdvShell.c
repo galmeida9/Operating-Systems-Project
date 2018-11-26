@@ -165,7 +165,7 @@ int main (int argc, char** argv) {
 				continue;
 			} else {
 				char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-				char *newArgs[4] = {seqsolver, args[1], pathPipe, NULL};
+				char *newArgs[4] = {seqsolver, args[1], strcmp(pathPipe, "") == 0 ? NULL : pathPipe, NULL};
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
@@ -246,30 +246,8 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	int pid, status;
-	for (int i = 0; i < processes_run; i++) {
-		pid = wait(&status);
-		TIMER_T stopTime;
-		TIMER_READ(stopTime);
-		if (pid < 0) {
-			if (errno == EINTR) {
-				/* Este codigo de erro significa que chegou signal que interrompeu a espera
-				pela terminacao de filho; logo voltamos a esperar */
-				continue;
-			} else {
-				perror("Unexpected error while waiting for child.");
-				exit (EXIT_FAILURE);
-			}
-		}
-		for (int i = 0; i < vector_getSize(children); ++i) {
-			child_t *child = vector_at(children, i);
-			if((child->pid) == pid) {
-				child->status = status;
-				child->stop_time = stopTime;
-				break;
-			}		
-		}
-	}
+	int wait = processes_run;
+	for (int i = 0; i < wait; i++) pause();
 	return;
 }
 
