@@ -120,8 +120,7 @@ static void parseArgs (long argc, char* const argv[]){
     long opt;
     char *pathPipe, *notSolved = "Circuit not solved\n";
 	
-	if(argc == 3) 
-		pathPipe = strdup(argv[2]);
+	if(argc == 3) pathPipe = strdup(argv[2]);
 
     opterr = 0;
 
@@ -159,7 +158,7 @@ static void parseArgs (long argc, char* const argv[]){
                 printf("Erro ao abrir pipe do cliente.\n");
                 exit(-1);    
             }   
-            write(fcli, notSolved, strlen(notSolved)+1);
+            if ((write(fcli, notSolved, strlen(notSolved)+1)) < 0) exit(-1);
         	free(pathPipe);
             close(fcli); 
         }
@@ -204,8 +203,7 @@ int main(int argc, char** argv){
      */
     char *pathPipe, *solved = "Circuit solved\n";
 	
-	if(argc == 3) 
-		pathPipe = strdup(argv[2]);
+	if(argc == 3) pathPipe = strdup(argv[2]);
 
 	parseArgs(argc, argv);
     FILE* resultFp = outputFile();
@@ -272,7 +270,7 @@ int main(int argc, char** argv){
             printf("Erro ao abrir pipe do cliente.\n");
             exit(-1);    
         }   
-        write(fcli, solved, strlen(solved)+1);
+        if ((write(fcli, solved, strlen(solved)+1)) < 0) exit(-1);
     	free(pathPipe);
         close(fcli); 
     }

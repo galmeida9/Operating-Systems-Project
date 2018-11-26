@@ -28,7 +28,7 @@
 
 #define MAXARGS 3
 
-int processes_run = 0;
+int runningChildren = 0;
 vector_t *children;
 
 int main (int argc, char** argv) {
@@ -37,7 +37,7 @@ int main (int argc, char** argv) {
 	char *msg_serv = "Starting SERVER pipe.\n",
 		 *msg_wait = "Wainting for results.\n",
 		 *commandNotSupported = "Command not supported.\n";
-	int MAXCHILDREN = -1, fserv, fcli, maxFD, runningChildren = 0;
+	int MAXCHILDREN = -1, fserv, fcli, maxFD;
 	fd_set readset;
 	struct sigaction handle_child;
 	handle_child.sa_handler = childTime;
@@ -94,7 +94,6 @@ int main (int argc, char** argv) {
 			}
 			else if (FD_ISSET(fserv, &readset)){
 				if (read(fserv, &msg, sizeof(msg_protocol))<=0) continue;
-				/*printf("%s%s\n", msg.command, msg.pipe);*/
 				strcpy(pathPipe, msg.pipe);
 				strcpy(buffer, msg.command);
 
@@ -113,10 +112,7 @@ int main (int argc, char** argv) {
 			printf("CircuitRouter-AdvShell will exit.\n--\n");
 
 			/* Espera pela terminacao de cada filho */
-			while (runningChildren > 0) {
-				waitForChild(children);
-				runningChildren --;
-			}
+			while (runningChildren > 0) waitForChild(children);
 
 			printChildren(children);
 			printf("--\nCircuitRouter-AdvShell ended.\n");
@@ -133,10 +129,7 @@ int main (int argc, char** argv) {
 						if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
 				continue;
 			}
-			if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
-				waitForChild(children);
-				runningChildren--;
-			}
+			if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) waitForChild(children);
 
 			pid = fork();
 			if (pid < 0) {
@@ -157,7 +150,6 @@ int main (int argc, char** argv) {
 				TIMER_READ(startTime);
 				child->start_time = startTime;
 				vector_pushBack(children, child);
-				processes_run++;
 				printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
 				continue;
 			} else {
@@ -211,7 +203,7 @@ void childTime(int sig){
 			break;
 		}		
 	}
-	processes_run--;
+	runningChildren--;
 }
 
 
@@ -242,7 +234,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	while (processes_run > 0) pause();
+	while (runningChildren > 0) pause();
 }
 
 void printChildren(vector_t *children) {
