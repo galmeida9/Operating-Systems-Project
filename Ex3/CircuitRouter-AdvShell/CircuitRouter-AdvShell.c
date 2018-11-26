@@ -49,6 +49,11 @@ int main (int argc, char** argv) {
 	int MAXCHILDREN = -1, fserv, fcli, maxFD, result;
 	int runningChildren = 0;
 	fd_set readset;
+	struct sigaction handle_child;
+	handle_child.sa_handler = childTime;
+	handle_child.sa_flags = SA_RESTART;
+	sigemptyset(&handle_child.sa_mask);
+	sigaction(SIGCHLD, &handle_child, NULL);
 
 
 	if(argv[1] != NULL){
@@ -78,8 +83,6 @@ int main (int argc, char** argv) {
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
-
-	signal(SIGCHLD, childTime);
 
 	while (1) {
 		int numArgs, hasClient=0;
@@ -216,7 +219,6 @@ void childTime(int sig){
 		}		
 	}
 	processes_run--;
-	signal(SIGCHLD, childTime);
 }
 
 int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize){
@@ -246,9 +248,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	int wait = processes_run;
-	for (int i = 0; i < wait; i++) pause();
-	return;
+	while (processes_run > 0) pause();
 }
 
 void printChildren(vector_t *children) {
