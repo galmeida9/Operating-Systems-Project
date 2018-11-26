@@ -69,7 +69,7 @@ int main (int argc, char** argv) {
 	
 	FD_ZERO(&readset);
 	FD_SET(fserv, &readset);
-	FD_SET(0, &readset);
+	FD_SET(fileno(stdin), &readset);
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
@@ -84,7 +84,7 @@ int main (int argc, char** argv) {
 		FD_SET(fserv, &readset);
 		FD_SET(0, &readset);
 
-		result = select(maxFD+1, &readset, 0, 0, 0);
+		result = select(maxFD+1, &readset, NULL, NULL, NULL);
 		if (result == -1){
 			continue;
 		}
