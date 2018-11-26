@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "CircuitRouter-AdvShell.h"
 
 #define CLI "/tmp/client"
 #define BUF 1024
@@ -20,9 +21,20 @@ void apanhaCTRLC(int sig){
     exit(0);
 }
 
+void leComando(char* ptr, int size){
+	char c;
+	int i=0, j;
+	for (j=0; j<size; j++) ptr[j] = '\0';
+	while ((c=getchar())!='\n' && i<=(size-1)){
+		ptr[i++] = c;
+	}
+	ptr[i++] = '\n';
+	ptr[i] = '\0';
+}
+
 int main(int argc, char** argv){
-    int pid;
-    char buffer[BUF], buffer_aux[BUF], pidNumber[24], *extention = ".pipe";
+    pid_t pid;
+    char buffer[BUFFER_SIZE], buffer_aux[BUFFER_SIZE], pidNumber[24], *extention = ".pipe";
 	strcpy(path, CLI);
     pid = getpid();
     sprintf(pidNumber, "%d", pid);
@@ -49,18 +61,20 @@ int main(int argc, char** argv){
     }
 
     while (1){
-		/*n = read(0, buffer, BUF-1);
-		buffer[n] = '\0';*/
-		fgets(buffer, BUF-2, stdin);
-		buffer[BUF-2] = '\n';
-		buffer[BUF-1] = '\0';
-
+		msg_protocol msg;
+		buffer_aux[0] = '\0';
+		leComando(buffer, BUF);
 		if (strcmp(buffer, "leave\n")==0) break;
-        write(fserv, path, strlen(path)+1);
+		strcpy(msg.pipe, path);
+		strcpy(msg.command, buffer);
+		/*strcat(buffer_aux, path);
+		strcat(buffer_aux, "@");
+		strcat(buffer_aux, buffer);
+		printf("%s", buffer_aux);*/
+
+        /*write(fserv, buffer_aux, strlen(buffer_aux)+1);*/
+		write(fserv, &msg, sizeof(msg_protocol));
 		fcli = open(path, O_RDONLY);
-		read(fcli, buffer_aux, BUF);
-		write(fserv, buffer, strlen(buffer)+1);
-		read(fcli, buffer_aux, BUF);
 		read(fcli, buffer_aux, BUF);
 		write(1, buffer_aux, strlen(buffer_aux));
 		close(fcli);
@@ -68,6 +82,6 @@ int main(int argc, char** argv){
 
     close(fserv);
     close(fcli);
-    unlink(CLI);
+    unlink(path);
     exit(0);
 }

@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -26,7 +27,6 @@
 #define SERVER_PATH "/tmp/servidor.pipe"
 
 #define MAXARGS 3
-#define BUFFER_SIZE 1024
 
 int processes_run = 0;
 vector_t *children;
@@ -44,9 +44,8 @@ int main (int argc, char** argv) {
 	char pathPipe[BUFFER_SIZE];
 	char *msg_serv = "Starting SERVER pipe.\n",
 		 *msg_wait = "Wainting for results.\n",
-		 *msg_recv = "Message Received.\n",
 		 *commandNotSupported = "Command not supported.\n";
-	int MAXCHILDREN = -1, fserv, fcli, maxFD, result;
+	int MAXCHILDREN = -1, fserv, fcli, maxFD;
 	int runningChildren = 0;
 	fd_set readset;
 	struct sigaction handle_child;
@@ -72,47 +71,49 @@ int main (int argc, char** argv) {
 	printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
 	write(1, msg_serv, strlen(msg_wait));
-	if ((fserv = open(SERVER_PATH, O_RDWR))<0){
+	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
 		printf("Erro ao inicializar pipe.\n");
 		exit(-1);
 	}
 	
 	FD_ZERO(&readset);
 	FD_SET(fserv, &readset);
-	FD_SET(fileno(stdin), &readset);
+	FD_SET(0, &readset);
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
 	write(1, msg_wait, strlen(msg_wait));
 
 	while (1) {
-		int numArgs, hasClient=0;
+		int numArgs, hasClient=0, result;
+		msg_protocol msg;
 		strcpy(pathPipe, "");
 		pathPipe[0] = '\0';
 		buffer[0] = '\0';
 
-		result = select(maxFD+1, &readset, NULL, NULL, NULL);
-		if (result == -1) continue;
+		FD_SET(fserv, &readset);
+		FD_SET(0, &readset);
+
+		result = select(maxFD+1, &readset, 0, 0, 0);
+		if (result == -1){
+			continue;
+		}
 		else if (result){
 			if (FD_ISSET(fileno(stdin), &readset)){
                 fgets(buffer, BUFFER_SIZE, stdin);
 			}
-			if (FD_ISSET(fserv, &readset)){
-				read(fserv, pathPipe, BUFFER_SIZE);
-				/*	printf("%s\n", pathPipe);*/
+			else if (FD_ISSET(fserv, &readset)){
+				if (read(fserv, &msg, sizeof(msg_protocol))<=0) continue;
+				/*printf("%s%s\n", msg.command, msg.pipe);*/
+				strcpy(pathPipe, msg.pipe);
+				strcpy(buffer, msg.command);
+
 				if((fcli = open(pathPipe, O_WRONLY)) < 0 ){
 					printf("Erro ao abrir pipe do cliente.\n");
 					exit(-1);
 				}
-				write(fcli, msg_recv, strlen(msg_recv)+1);
-				read(fserv, buffer, BUFFER_SIZE);																	
-				write(fcli, msg_recv, strlen(msg_recv)+1);
-				/*printf("%s\n", buffer);*/
 				hasClient=1;
 			}
 		}
-		
-		FD_SET(fserv, &readset);
-		FD_SET(fileno(stdin), &readset);
 
 		if (hasClient==1) printf("%s\n", buffer);
 		numArgs = parseArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
@@ -137,6 +138,7 @@ int main (int argc, char** argv) {
 			int pid;
 			if (numArgs < 2) {
 				printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
+				if (hasClient==1) write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
 				continue;
 			}
 			if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
@@ -172,23 +174,22 @@ int main (int argc, char** argv) {
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
+				write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
 				exit(EXIT_FAILURE);
 			}
 		}
 
-		else if (numArgs == 0){
+		else if (numArgs == 0 && hasClient==0){
 			/* Nenhum argumento; ignora e volta a pedir */
 			continue;
 		}
 		
-		else if (hasClient == 1)
+		else if (hasClient == 1){
 			write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
-
+			close(fcli);
+		}
 		else
 			printf("%s", commandNotSupported);
-
-		close(fcli);
-
 	}
 
 	for (int i = 0; i < vector_getSize(children); i++) {
@@ -220,6 +221,7 @@ void childTime(int sig){
 	}
 	processes_run--;
 }
+
 
 int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize){
 	int numTokens = 0;
