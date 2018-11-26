@@ -31,29 +31,20 @@
 int processes_run = 0;
 vector_t *children;
 
-void childTime(int sig);
-int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize);
-void waitForChild(vector_t *children);
-void printChildren(vector_t *children);
-
-
 int main (int argc, char** argv) {
 
-	char *args[MAXARGS + 1];
-	char buffer[BUFFER_SIZE];
-	char pathPipe[BUFFER_SIZE];
+	char *args[MAXARGS + 1], buffer[BUFFER_SIZE], pathPipe[BUFFER_SIZE];
 	char *msg_serv = "Starting SERVER pipe.\n",
 		 *msg_wait = "Wainting for results.\n",
 		 *commandNotSupported = "Command not supported.\n";
-	int MAXCHILDREN = -1, fserv, fcli, maxFD;
-	int runningChildren = 0;
+	int MAXCHILDREN = -1, fserv, fcli, maxFD, runningChildren = 0;
 	fd_set readset;
 	struct sigaction handle_child;
 	handle_child.sa_handler = childTime;
 	handle_child.sa_flags = SA_RESTART;
+
 	sigemptyset(&handle_child.sa_mask);
 	sigaction(SIGCHLD, &handle_child, NULL);
-
 
 	if(argv[1] != NULL){
 		MAXCHILDREN = atoi(argv[1]);
@@ -203,7 +194,7 @@ int main (int argc, char** argv) {
 	return EXIT_SUCCESS;
 }
 
-/**/
+/*Auxiliary*/
 
 void childTime(int sig){
 	pid_t pid;

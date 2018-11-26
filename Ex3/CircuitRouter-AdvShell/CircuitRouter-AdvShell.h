@@ -20,6 +20,8 @@ typedef struct {
 	char command[BUFFER_SIZE];
 } msg_protocol;
 
+void childTime(int sig);
+int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize);
 void waitForChild(vector_t *children);
 void printChildren(vector_t *children);
 
