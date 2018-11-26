@@ -72,7 +72,7 @@ int main (int argc, char** argv) {
 	FD_SET(fileno(stdin), &readset);
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
-	write(1, msg_wait, strlen(msg_wait));
+	if ((write(1, msg_wait, strlen(msg_wait))) < 0) exit(-1);
 
 	while (1) {
 		int numArgs, hasClient=0, result;
