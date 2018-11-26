@@ -61,7 +61,7 @@ int main (int argc, char** argv) {
 
 	printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
-	write(1, msg_serv, strlen(msg_wait));
+	if ((write(1, msg_serv, strlen(msg_wait))) < 0) exit(-1);
 	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
 		printf("Erro ao inicializar pipe.\n");
 		exit(-1);
@@ -129,7 +129,8 @@ int main (int argc, char** argv) {
 			int pid;
 			if (numArgs < 2) {
 				printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
-				if (hasClient==1) write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
+				if (hasClient==1) 
+						if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
 				continue;
 			}
 			if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
@@ -165,7 +166,7 @@ int main (int argc, char** argv) {
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
-				write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
+				if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -176,7 +177,7 @@ int main (int argc, char** argv) {
 		}
 		
 		else if (hasClient == 1){
-			write(fcli, commandNotSupported, strlen(commandNotSupported)+1);
+			if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
 			close(fcli);
 		}
 		else

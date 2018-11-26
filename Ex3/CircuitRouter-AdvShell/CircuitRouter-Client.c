@@ -70,10 +70,10 @@ int main(int argc, char** argv){
 		strcpy(msg.pipe, path);
 		strcpy(msg.command, buffer);
 
-		write(fserv, &msg, sizeof(msg_protocol));
+		if ((write(fserv, &msg, sizeof(msg_protocol))) < 0) exit(EXIT_FAILURE);
 		if ((fcli = open(path, O_RDONLY))<0) exit(EXIT_FAILURE);
 		if ((read(fcli, buffer_aux, BUFFER_SIZE))<0) exit(EXIT_FAILURE);
-		write(1, buffer_aux, strlen(buffer_aux));
+		if ((write(1, buffer_aux, strlen(buffer_aux))) < 0) exit(EXIT_FAILURE);
 		close(fcli);
 	}
 
