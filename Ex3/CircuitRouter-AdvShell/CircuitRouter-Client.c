@@ -44,20 +44,20 @@ int main(int argc, char** argv){
 	signal(SIGPIPE, apanhaINT);
 
 	if (argc!=2){
-		printf("Falta o argumento da pipe do servidor\n");
-		exit(-1);
+		printf("Server pipe is missing.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	if ( (fserv = open(argv[1], O_WRONLY))<0){
-		printf("Erro ao abrir pipe\n");
-		exit(-1);
+		printf("Error opening server pipe.\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	unlink(path);
 	
 	if (mkfifo(path, 0777) < 0){
-		printf("Erro ao iniciar PIPE do cliente1\n");
-		exit(-1);		 
+		printf("Error creating client pipe.\n");
+		exit(EXIT_FAILURE);		 
 	}
 
 	while (1){
@@ -80,5 +80,5 @@ int main(int argc, char** argv){
 	close(fserv);
 	close(fcli);
 	unlink(path);
-	exit(0);
+	exit(EXIT_SUCCESS);
 }

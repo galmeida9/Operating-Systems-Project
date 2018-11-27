@@ -155,8 +155,8 @@ static void parseArgs (long argc, char* const argv[]){
         else {
             int fcli;
             if ((fcli = open(pathPipe, O_WRONLY)) < 0) {
-                printf("Erro ao abrir pipe do cliente.\n");
-                exit(-1);    
+                printf("Error opening client pipe.\n");
+                exit(EXIT_FAILURE);    
             }   
             if ((write(fcli, notSolved, strlen(notSolved)+1)) < 0) exit(-1);
         	free(pathPipe);
@@ -267,14 +267,14 @@ int main(int argc, char** argv){
     else {
         int fcli;
         if ((fcli = open(pathPipe, O_WRONLY)) < 0) {
-            printf("Erro ao abrir pipe do cliente.\n");
-            exit(-1);    
+            printf("Error opening client pipe.\n");
+            exit(EXIT_FAILURE);    
         }   
         if ((write(fcli, solved, strlen(solved)+1)) < 0) exit(-1);
     	free(pathPipe);
         close(fcli); 
     }
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 

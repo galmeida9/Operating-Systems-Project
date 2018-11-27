@@ -55,16 +55,16 @@ int main (int argc, char** argv) {
 	unlink(SERVER_PATH);
 
 	if (mkfifo(SERVER_PATH, 0777)<0){
-		printf("Erro ao criar pipe.\n");
-		exit(-1);
+		printf("Error creating server pipe.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
-	if ((write(1, msg_serv, strlen(msg_wait))) < 0) exit(-1);
+	if ((write(1, msg_serv, strlen(msg_wait))) < 0) exit(EXIT_FAILURE);
 	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
-		printf("Erro ao inicializar pipe.\n");
-		exit(-1);
+		printf("Error initializing server pipe.\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	FD_ZERO(&readset);
@@ -72,7 +72,7 @@ int main (int argc, char** argv) {
 	FD_SET(fileno(stdin), &readset);
 	maxFD = fileno(stdin) > fserv ? fileno(stdin) : fserv;
 
-	if ((write(1, msg_wait, strlen(msg_wait))) < 0) exit(-1);
+	if ((write(1, msg_wait, strlen(msg_wait))) < 0) exit(EXIT_FAILURE);
 
 	while (1) {
 		int numArgs, hasClient=0, result;
@@ -98,8 +98,8 @@ int main (int argc, char** argv) {
 				strcpy(buffer, msg.command);
 
 				if((fcli = open(pathPipe, O_WRONLY)) < 0 ){
-					printf("Erro ao abrir pipe do cliente.\n");
-					exit(-1);
+					printf("Error opening client pipe.\n");
+					exit(EXIT_FAILURE);
 				}
 				hasClient=1;
 			}
@@ -126,7 +126,7 @@ int main (int argc, char** argv) {
 			if (numArgs < 2) {
 				printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
 				if (hasClient==1) 
-						if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
+						if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(EXIT_FAILURE);
 				continue;
 			}
 			if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) waitForChild(children);
@@ -158,7 +158,7 @@ int main (int argc, char** argv) {
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
-				if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
+				if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(EXIT_FAILURE);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -169,7 +169,7 @@ int main (int argc, char** argv) {
 		}
 		
 		else if (hasClient == 1){
-			if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(-1);
+			if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(EXIT_FAILURE);
 			close(fcli);
 		}
 		else
