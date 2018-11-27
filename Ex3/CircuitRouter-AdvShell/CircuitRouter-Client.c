@@ -60,8 +60,10 @@ int main(int argc, char** argv){
 		exit(EXIT_FAILURE);		 
 	}
 
+	Message_Protocol msg;
+	memset(&msg, 0, sizeof(Message_Protocol));
+
 	while (1){
-		Message_Protocol msg;
 
 		buffer_aux[0] = '\0';
 		leComando(buffer, BUFFER_SIZE);
