@@ -24,7 +24,7 @@
 
 #define COMMAND_EXIT "exit"
 #define COMMAND_RUN "run"
-#define SERVER_PATH "/tmp/servidor.pipe"
+#define SERVER_PATH "/tmp/"
 
 #define MAXARGS 3
 
@@ -33,15 +33,21 @@ vector_t *children;
 
 int main (int argc, char** argv) {
 
-	char *args[MAXARGS + 1], buffer[BUFFER_SIZE], pathPipe[BUFFER_SIZE];
+	char *args[MAXARGS + 1], buffer[BUFFER_SIZE], pathPipe[BUFFER_SIZE], pathServer[BUFFER_SIZE];
 	char *msg_serv = "Starting SERVER pipe.\n",
 		 *msg_wait = "Wainting for results.\n",
-		 *commandNotSupported = "Command not supported.\n";
+		 *commandNotSupported = "Command not supported.\n",
+         *extension = ".pipe";
 	int MAXCHILDREN = -1, fserv, fcli, maxFD;
 	fd_set readset;
 	struct sigaction handle_child;
 	handle_child.sa_handler = childTime;
 	handle_child.sa_flags = SA_RESTART;
+
+    strcpy(pathServer, "");
+    strcat(pathServer, SERVER_PATH);
+    strcat(pathServer, argv[0]);
+    strcat(pathServer, extension);
 
 	sigemptyset(&handle_child.sa_mask);
 	sigaction(SIGCHLD, &handle_child, NULL);
@@ -52,9 +58,10 @@ int main (int argc, char** argv) {
 	
 	children = vector_alloc(MAXCHILDREN);
 
-	unlink(SERVER_PATH);
+	unlink(pathServer);
 
-	if (mkfifo(SERVER_PATH, 0777)<0){
+    printf("%s\n", pathServer);
+	if (mkfifo(pathServer, 0777)<0){
 		printf("Error creating server pipe.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -62,7 +69,7 @@ int main (int argc, char** argv) {
 	printf("Welcome to CircuitRouter-AdvShell\n\n");
 	
 	if ((write(1, msg_serv, strlen(msg_wait))) < 0) exit(EXIT_FAILURE);
-	if ((fserv = open(SERVER_PATH, O_RDONLY | O_NONBLOCK))<0){
+	if ((fserv = open(pathServer, O_RDONLY | O_NONBLOCK))<0){
 		printf("Error initializing server pipe.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -117,7 +124,7 @@ int main (int argc, char** argv) {
 			printChildren(children);
 			printf("--\nCircuitRouter-AdvShell ended.\n");
 			close(fserv);
-			unlink(SERVER_PATH);
+			unlink(pathServer);
 			break;
 		}
 
@@ -158,7 +165,7 @@ int main (int argc, char** argv) {
 
 				execv(seqsolver, newArgs);
 				perror("Error while executing child process"); // Nao deveria chegar aqui
-				if ((write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(EXIT_FAILURE);
+				if (hasClient == 1 && (write(fcli, commandNotSupported, strlen(commandNotSupported)+1)) < 0) exit(EXIT_FAILURE);
 				exit(EXIT_FAILURE);
 			}
 		}
