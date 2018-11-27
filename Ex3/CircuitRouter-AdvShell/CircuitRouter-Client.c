@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "CircuitRouter-AdvShell.h"
+#include "CircuitRouter-Protocol.h"
 
 #define CLI "/tmp/client"
 
@@ -33,7 +33,7 @@ void leComando(char* ptr, int size){
 
 int main(int argc, char** argv){
 	pid_t pid;
-	char buffer[BUFFER_SIZE], buffer_aux[BUFFER_SIZE], pidNumber[24], *extention = ".pipe";
+	char buffer[BUFFER_SIZE], buffer_aux[BUFFER_SIZE], pidNumber[BUFFER_SIZE], *extention = ".pipe";
 	strcpy(path, CLI);
 	pid = getpid();
 	sprintf(pidNumber, "%d", pid);
@@ -61,7 +61,7 @@ int main(int argc, char** argv){
 	}
 
 	while (1){
-		msg_protocol msg;
+		Message_Protocol msg;
 
 		buffer_aux[0] = '\0';
 		leComando(buffer, BUFFER_SIZE);
@@ -70,7 +70,7 @@ int main(int argc, char** argv){
 		strcpy(msg.pipe, path);
 		strcpy(msg.command, buffer);
 
-		if ((write(fserv, &msg, sizeof(msg_protocol))) < 0) exit(EXIT_FAILURE);
+		if ((write(fserv, &msg, sizeof(Message_Protocol))) < 0) exit(EXIT_FAILURE);
 		if ((fcli = open(path, O_RDONLY))<0) exit(EXIT_FAILURE);
 		if ((read(fcli, buffer_aux, BUFFER_SIZE))<0) exit(EXIT_FAILURE);
 		if ((write(1, buffer_aux, strlen(buffer_aux))) < 0) exit(EXIT_FAILURE);

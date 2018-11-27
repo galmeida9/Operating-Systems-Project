@@ -76,7 +76,7 @@ int main (int argc, char** argv) {
 
 	while (1) {
 		int numArgs, hasClient=0, result;
-		msg_protocol msg;
+		Message_Protocol msg;
 		strcpy(pathPipe, "");
 		pathPipe[0] = '\0';
 		buffer[0] = '\0';
@@ -93,7 +93,7 @@ int main (int argc, char** argv) {
                 fgets(buffer, BUFFER_SIZE, stdin);
 			}
 			else if (FD_ISSET(fserv, &readset)){
-				if (read(fserv, &msg, sizeof(msg_protocol))<=0) continue;
+				if (read(fserv, &msg, sizeof(Message_Protocol))<=0) continue;
 				strcpy(pathPipe, msg.pipe);
 				strcpy(buffer, msg.command);
 

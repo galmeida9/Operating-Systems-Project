@@ -4,8 +4,7 @@
 #include "lib/vector.h"
 #include <sys/types.h>
 #include "lib/timer.h"
-
-#define BUFFER_SIZE 1024
+#include "CircuitRouter-Protocol.h"
 
 typedef struct {
 	pid_t pid;
@@ -15,10 +14,6 @@ typedef struct {
 	TIMER_T stop_time;
 } child_t;
 
-typedef struct {
-	char pipe[BUFFER_SIZE];
-	char command[BUFFER_SIZE];
-} msg_protocol;
 
 void childTime(int sig);
 int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSize);
