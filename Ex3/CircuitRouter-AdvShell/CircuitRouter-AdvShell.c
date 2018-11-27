@@ -241,7 +241,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	while (runningChildren > 0) pause();
+	while (runningChildren > 0);
 }
 
 void printChildren(vector_t *children) {
