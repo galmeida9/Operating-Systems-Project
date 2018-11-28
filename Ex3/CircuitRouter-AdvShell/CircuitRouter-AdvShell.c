@@ -41,16 +41,19 @@ int main (int argc, char** argv) {
 	int MAXCHILDREN = -1, fserv, fcli, maxFD;
 	fd_set readset;
 	struct sigaction handle_child;
+	sigset_t child_set;
+	sigemptyset(&child_set);
+	sigaddset(&child_set, SIGCHLD);
 	handle_child.sa_handler = childTime;
 	handle_child.sa_flags = SA_RESTART;
+	sigemptyset(&handle_child.sa_mask);
+	sigaction(SIGCHLD, &handle_child, NULL);
 
     strcpy(pathServer, "");
     strcat(pathServer, SERVER_PATH);
     strcat(pathServer, argv[0]);
     strcat(pathServer, extension);
 
-	sigemptyset(&handle_child.sa_mask);
-	sigaction(SIGCHLD, &handle_child, NULL);
 
 	if(argv[1] != NULL){
 		MAXCHILDREN = atoi(argv[1]);
@@ -143,9 +146,9 @@ int main (int argc, char** argv) {
 				perror("Failed to create new process.");
 				exit(EXIT_FAILURE);
 			}
-
+			
 			if (pid > 0) {
-				runningChildren++;
+				sigprocmask(SIG_BLOCK, &child_set, NULL);
 				child_t *child = malloc(sizeof(child_t));
 				if (child == NULL) {
 					perror("Error allocating memory");
@@ -157,6 +160,8 @@ int main (int argc, char** argv) {
 				TIMER_READ(startTime);
 				child->start_time = startTime;
 				vector_pushBack(children, child);
+				runningChildren++;
+				sigprocmask(SIG_UNBLOCK, &child_set, NULL);
 				printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
 				continue;
 			} else {
