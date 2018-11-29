@@ -17,7 +17,7 @@ void apanhaINT(int sig){
 	close(fserv);
 	close(fcli);
 	unlink(path);
-	raise(SIGTERM);
+	_Exit(EXIT_FAILURE);
 }
 
 void leComando(char* ptr, int size){

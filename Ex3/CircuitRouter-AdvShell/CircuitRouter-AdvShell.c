@@ -204,18 +204,22 @@ int main (int argc, char** argv) {
 void childTime(int sig){
 	pid_t pid;
 	int status;
-	pid = waitpid(-1, &status, WNOHANG);
-	TIMER_T stopTime;
-	TIMER_READ(stopTime);
-	for (int i = 0; i < vector_getSize(children); ++i) {
-		child_t *child = vector_at(children, i);
-		if((child->pid) == pid) {
-			child->status = status;
-			child->stop_time = stopTime;
-			break;
-		}		
-	}
-	runningChildren--;
+	do{	
+		pid = waitpid(-1, &status, WNOHANG);
+		if (pid==0 || errno == ECHILD) break;
+		if (pid==-1) _Exit(EXIT_FAILURE); 
+		TIMER_T stopTime;
+		TIMER_READ(stopTime);
+		for (int i = 0; i < vector_getSize(children); ++i){
+			child_t *child = vector_at(children, i);
+			if((child->pid) == pid) {
+				child->status = status;
+				child->stop_time = stopTime;
+				break;
+			}		
+		}
+		runningChildren--;
+	}while (pid > 0);
 }
 
 
