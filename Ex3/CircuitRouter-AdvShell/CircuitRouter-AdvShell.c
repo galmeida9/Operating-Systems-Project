@@ -2,6 +2,8 @@
 /*
 // Projeto SO - exercise 3, version 1
 // Sistemas Operativos, DEI/IST/ULisboa 2018-19
+// Daniel Gonçalves, 91004
+// Gabriel Almeida, 89446
 */
  
 #include "lib/commandlinereader.h"
@@ -49,7 +51,8 @@ int main (int argc, char** argv) {
 	sigemptyset(&handle_child.sa_mask);
 	sigaction(SIGCHLD, &handle_child, NULL);
 
-    strcpy(pathServer, "");
+	/*Prepara o path do Servidor, que ficará /tmp/CircuitRouter-AdvShell.pipe*/
+    strcpy(pathServer, ""); 
     strcat(pathServer, SERVER_PATH);
     strcat(pathServer, argv[0]);
     strcat(pathServer, extension);
@@ -92,7 +95,7 @@ int main (int argc, char** argv) {
 		buffer[0] = '\0';
 
 		FD_SET(fserv, &readset);
-		FD_SET(0, &readset);
+		FD_SET(fileno(stdin), &readset);
 
 		result = select(maxFD+1, &readset, NULL, NULL, NULL);
 		if (result == -1){
@@ -148,7 +151,7 @@ int main (int argc, char** argv) {
 			}
 			
 			if (pid > 0) {
-				sigprocmask(SIG_BLOCK, &child_set, NULL);
+				sigprocmask(SIG_BLOCK, &child_set, NULL); /*Bloqueamos o SIGCHLD para podermos criar as estruturas*/
 				child_t *child = malloc(sizeof(child_t));
 				if (child == NULL) {
 					perror("Error allocating memory");
@@ -250,7 +253,7 @@ int parseArguments(char **argVector, int vectorSize, char *buffer, int bufferSiz
 }
 
 void waitForChild(vector_t *children) {
-	while (runningChildren > 0);
+	while (runningChildren > 0); /*Espera enquanto há filhos, já que tratamos de SIGCHLD*/
 }
 
 void printChildren(vector_t *children) {

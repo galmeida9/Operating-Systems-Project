@@ -3,6 +3,7 @@
 
 #define BUFFER_SIZE 1024
 
+/*Estrutura de Protocolo utilizada no AdvShell e Client*/
 typedef struct {
 	char pipe[BUFFER_SIZE];
 	char command[BUFFER_SIZE];

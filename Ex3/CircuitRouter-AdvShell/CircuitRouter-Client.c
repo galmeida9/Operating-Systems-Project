@@ -34,6 +34,8 @@ void leComando(char* ptr, int size){
 int main(int argc, char** argv){
 	pid_t pid;
 	char buffer[BUFFER_SIZE], buffer_aux[BUFFER_SIZE], pidNumber[BUFFER_SIZE], *extention = ".pipe";
+
+	/* Criação do path da pipe do client*/
 	strcpy(path, CLI);
 	pid = getpid();
 	sprintf(pidNumber, "%d", pid);
@@ -62,6 +64,7 @@ int main(int argc, char** argv){
 
 	Message_Protocol msg;
 	memset(&msg, 0, sizeof(Message_Protocol));
+	strcpy(msg.pipe, path);
 
 	while (1){
 
@@ -69,7 +72,6 @@ int main(int argc, char** argv){
 		leComando(buffer, BUFFER_SIZE);
 		if (strcmp(buffer, "leave\n")==0) break;
 
-		strcpy(msg.pipe, path);
 		strcpy(msg.command, buffer);
 
 		if ((write(fserv, &msg, sizeof(Message_Protocol))) < 0) exit(EXIT_FAILURE);
